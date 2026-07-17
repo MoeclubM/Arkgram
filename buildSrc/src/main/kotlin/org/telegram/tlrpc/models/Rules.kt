@@ -63,7 +63,8 @@ object RulesRegistry {
                 "updateInlineBotCallbackQuery",
                 "updatePtsChanged",
                 "updateSmsJob",
-                "updateBotGuestChatQuery"
+                "updateBotGuestChatQuery",
+                "updateBotStarsSubscription"
             ),
             "MessageAction" to setOf(
                 "messageActionRequestedPeerSentMe",
