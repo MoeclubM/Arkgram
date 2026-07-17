@@ -1,10 +1,12 @@
 package org.telegram.messenger;
 
+import android.net.Uri;
 import android.text.TextUtils;
 
 import com.google.common.base.Charsets;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -44,7 +46,6 @@ public class FlexLlmHelper {
             try {
                 connection = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
                 connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
@@ -88,11 +89,23 @@ public class FlexLlmHelper {
                 JSONObject response = new JSONObject(responseText);
                 String result;
                 if (apiType == FlexConfig.LLM_API_TYPE_RESPONSES) {
-                    result = response.optString("output_text", null);
-                    if (TextUtils.isEmpty(result)) {
-                        result = extractResponseOutput(response.optJSONArray("output"));
+                    String status = response.optString("status", "");
+                    if ("failed".equals(status)) {
+                        JSONObject error = response.optJSONObject("error");
+                        String message = error != null ? error.optString("message", null) : null;
+                        throw new IllegalStateException(TextUtils.isEmpty(message) ? LocaleController.getString(R.string.FlexLlmRequestFailed) : message);
                     }
+                    if ("incomplete".equals(status)) {
+                        JSONObject details = response.optJSONObject("incomplete_details");
+                        String reason = details != null ? details.optString("reason", null) : null;
+                        throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmResponseIncomplete) + (TextUtils.isEmpty(reason) ? "" : " (" + reason + ")"));
+                    }
+                    result = extractResponseOutput(response.optJSONArray("output"));
                 } else if (apiType == FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES) {
+                    String stopReason = response.optString("stop_reason", "");
+                    if (!TextUtils.isEmpty(stopReason) && !"end_turn".equals(stopReason)) {
+                        throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmResponseIncomplete) + " (" + stopReason + ")");
+                    }
                     result = extractTextContent(response.optJSONArray("content"));
                 } else {
                     result = extractChatCompletion(response);
@@ -103,14 +116,15 @@ public class FlexLlmHelper {
                 String finalResult = result.trim();
                 AndroidUtilities.runOnUIThread(() -> done.run(finalResult, null));
             } catch (Exception e) {
-                String errorMessage = e.getMessage();
-                if (TextUtils.isEmpty(errorMessage) || errorMessage.startsWith("org.json.")) {
-                    try {
-                        responseText = readConnectionText(connection, true);
-                    } catch (Exception ignore) {
+                try {
+                    String errorResponseText = readConnectionText(connection, true);
+                    if (!TextUtils.isEmpty(errorResponseText)) {
+                        responseText = errorResponseText;
                     }
-                    errorMessage = getErrorMessage(connection, responseText);
+                } catch (Exception readError) {
+                    FileLog.e(readError);
                 }
+                String errorMessage = getErrorMessage(connection, responseText, e);
                 FileLog.e(e);
                 String finalErrorMessage = errorMessage;
                 AndroidUtilities.runOnUIThread(() -> done.run(null, finalErrorMessage));
@@ -138,39 +152,58 @@ public class FlexLlmHelper {
             HttpURLConnection connection = null;
             String responseText = null;
             try {
-                connection = (HttpURLConnection) new URI(getModelsApiUrl(apiUrl)).toURL().openConnection();
-                connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("Accept", "application/json");
-                setAuthHeaders(connection, apiType, apiKey);
-
-                responseText = readConnectionText(connection, false);
-                JSONArray data = new JSONObject(responseText).optJSONArray("data");
-                if (data == null) {
-                    throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
-                }
                 ArrayList<String> models = new ArrayList<>();
-                for (int i = 0; i < data.length(); ++i) {
-                    JSONObject model = data.optJSONObject(i);
-                    String id = model != null ? model.optString("id", "").trim() : "";
-                    if (!TextUtils.isEmpty(id) && !models.contains(id)) {
-                        models.add(id);
+                String modelsApiUrl = getModelsApiUrl(apiUrl);
+                String afterId = null;
+                while (true) {
+                    String requestUrl = modelsApiUrl;
+                    if (!TextUtils.isEmpty(afterId)) {
+                        requestUrl = Uri.parse(modelsApiUrl).buildUpon().appendQueryParameter("after_id", afterId).build().toString();
                     }
+                    connection = (HttpURLConnection) new URI(requestUrl).toURL().openConnection();
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(30000);
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("Accept", "application/json");
+                    setAuthHeaders(connection, apiType, apiKey);
+
+                    responseText = readConnectionText(connection, false);
+                    JSONObject response = new JSONObject(responseText);
+                    JSONArray data = response.optJSONArray("data");
+                    if (data == null) {
+                        throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
+                    }
+                    for (int i = 0; i < data.length(); ++i) {
+                        JSONObject model = data.optJSONObject(i);
+                        String id = model != null ? model.optString("id", "").trim() : "";
+                        if (!TextUtils.isEmpty(id) && !models.contains(id)) {
+                            models.add(id);
+                        }
+                    }
+                    if (apiType != FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES || !response.optBoolean("has_more")) {
+                        break;
+                    }
+                    afterId = response.optString("last_id", null);
+                    if (TextUtils.isEmpty(afterId)) {
+                        throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
+                    }
+                    connection.disconnect();
+                    connection = null;
                 }
                 if (models.isEmpty()) {
                     throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
                 }
                 AndroidUtilities.runOnUIThread(() -> done.run(models, null));
             } catch (Exception e) {
-                String errorMessage = e.getMessage();
-                if (TextUtils.isEmpty(errorMessage) || errorMessage.startsWith("org.json.")) {
-                    try {
-                        responseText = readConnectionText(connection, true);
-                    } catch (Exception ignore) {
+                try {
+                    String errorResponseText = readConnectionText(connection, true);
+                    if (!TextUtils.isEmpty(errorResponseText)) {
+                        responseText = errorResponseText;
                     }
-                    errorMessage = getErrorMessage(connection, responseText);
+                } catch (Exception readError) {
+                    FileLog.e(readError);
                 }
+                String errorMessage = getErrorMessage(connection, responseText, e);
                 FileLog.e(e);
                 String finalErrorMessage = errorMessage;
                 AndroidUtilities.runOnUIThread(() -> done.run(null, finalErrorMessage));
@@ -219,7 +252,7 @@ public class FlexLlmHelper {
         }
     }
 
-    private static String getErrorMessage(HttpURLConnection connection, String responseText) {
+    private static String getErrorMessage(HttpURLConnection connection, String responseText, Exception exception) {
         try {
             if (!TextUtils.isEmpty(responseText)) {
                 JSONObject object = new JSONObject(responseText);
@@ -243,36 +276,42 @@ public class FlexLlmHelper {
         }
         try {
             int responseCode = connection != null ? connection.getResponseCode() : 0;
-            if (responseCode > 0) {
+            if (responseCode >= 400) {
                 return LocaleController.getString(R.string.FlexLlmRequestFailed) + " (" + responseCode + ")";
             }
         } catch (Exception ignore) {
+        }
+        if (exception instanceof JSONException) {
+            return LocaleController.getString(R.string.FlexLlmInvalidResponse);
+        }
+        if (!TextUtils.isEmpty(exception.getMessage())) {
+            return exception.getMessage();
         }
         return LocaleController.getString(R.string.FlexLlmRequestFailed);
     }
 
     private static String getModelsApiUrl(String apiUrl) {
         String value = apiUrl.trim();
-        int queryIndex = value.indexOf('?');
-        if (queryIndex >= 0) {
-            value = value.substring(0, queryIndex);
+        int suffixIndex = value.indexOf('?');
+        int fragmentIndex = value.indexOf('#');
+        if (suffixIndex < 0 || fragmentIndex >= 0 && fragmentIndex < suffixIndex) {
+            suffixIndex = fragmentIndex;
         }
+        String suffix = suffixIndex >= 0 ? value.substring(suffixIndex) : "";
+        value = suffixIndex >= 0 ? value.substring(0, suffixIndex) : value;
         while (value.endsWith("/")) {
             value = value.substring(0, value.length() - 1);
         }
         if (value.endsWith("/chat/completions")) {
-            return value.substring(0, value.length() - "/chat/completions".length()) + "/models";
-        }
-        if (value.endsWith("/completions")) {
-            return value.substring(0, value.length() - "/completions".length()) + "/models";
+            return value.substring(0, value.length() - "/chat/completions".length()) + "/models" + suffix;
         }
         if (value.endsWith("/responses")) {
-            return value.substring(0, value.length() - "/responses".length()) + "/models";
+            return value.substring(0, value.length() - "/responses".length()) + "/models" + suffix;
         }
         if (value.endsWith("/messages")) {
-            return value.substring(0, value.length() - "/messages".length()) + "/models";
+            return value.substring(0, value.length() - "/messages".length()) + "/models" + suffix;
         }
-        return value + "/models";
+        return value + "/models" + suffix;
     }
 
     private static String extractChatCompletion(JSONObject response) {
@@ -284,8 +323,11 @@ public class FlexLlmHelper {
         if (choice == null) {
             return null;
         }
-        String result = extractMessageContent(choice.optJSONObject("message"));
-        return TextUtils.isEmpty(result) ? choice.optString("text", null) : result;
+        String finishReason = choice.optString("finish_reason", "");
+        if (!TextUtils.isEmpty(finishReason) && !"stop".equals(finishReason)) {
+            throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmResponseIncomplete) + " (" + finishReason + ")");
+        }
+        return extractMessageContent(choice.optJSONObject("message"));
     }
 
     private static String extractMessageContent(JSONObject message) {
@@ -339,8 +381,6 @@ public class FlexLlmHelper {
             Object text = object.opt("text");
             if (text instanceof String) {
                 builder.append((String) text);
-            } else if (text instanceof JSONObject) {
-                builder.append(((JSONObject) text).optString("value"));
             }
         }
         String result = builder.toString().trim();

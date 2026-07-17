@@ -10873,7 +10873,7 @@
     <string name="FlexNewMarkdownParser">Use New Markdown Parser</string>
     <string name="FlexMarkdownParseLinks">Parse Markdown Links</string>
     <string name="FlexMarkdownInfo">Nagram-style Markdown can render code blocks, spoilers, strike-through, and inline links.</string>
-    <string name="FlexTranslationProvider">Fallback Provider</string>
+    <string name="FlexTranslationProvider">Translation Provider</string>
     <string name="FlexTranslationProviderTelegram">Telegram Translate</string>
     <string name="FlexTranslationProviderGoogle">Google Translate</string>
     <string name="FlexTranslationProviderGoogleCn">Google Translate (CN)</string>
@@ -10934,6 +10934,7 @@
     <string name="FlexLlmApiUrlMissing">LLM API URL is not set.</string>
     <string name="FlexLlmModelMissing">LLM model is not set.</string>
     <string name="FlexLlmInvalidResponse">The LLM provider returned an invalid response.</string>
+    <string name="FlexLlmResponseIncomplete">The LLM provider did not complete the response.</string>
     <string name="FlexLlmRequestFailed">The LLM request failed.</string>
     <string name="FlexAiSummarySettings">AI Summary</string>
     <string name="FlexAiSummarySettingsInfo">Choose one configured model from the shared provider list, then set the prompt used to summarize chat messages with AI.</string>

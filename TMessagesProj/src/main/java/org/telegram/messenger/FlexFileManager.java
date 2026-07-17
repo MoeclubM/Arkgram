@@ -34,7 +34,7 @@ public class FlexFileManager {
         LinkedHashMap<String, Object> global = new LinkedHashMap<>();
         LinkedHashMap<String, Object> account = new LinkedHashMap<>();
 
-        root.put("version", 5);
+        root.put("version", 6);
         root.put("exported_at", System.currentTimeMillis());
         root.put("current_account", currentAccount);
         root.put("global", global);
@@ -66,16 +66,8 @@ public class FlexFileManager {
         global.put("translation_target_language", TranslateAlert2.getToLanguage());
         global.put("translation_deepl_api_url", FlexConfig.getDeepLApiUrl());
         global.put("translation_deepl_api_key", FlexConfig.getDeepLApiKey());
-        global.put("translation_llm_provider", FlexConfig.getTranslationLlmProvider());
-        global.put("translation_llm_api_url", FlexConfig.getStoredLlmApiUrl());
-        global.put("translation_llm_api_key", FlexConfig.getLlmApiKey());
-        global.put("translation_llm_model", FlexConfig.getLlmModel());
         global.put("translation_llm_model_ref", FlexConfig.getTranslationLlmModelRef());
         global.put("translation_llm_prompt", FlexConfig.getLlmPrompt());
-        global.put("ai_summary_llm_provider", FlexConfig.getAiSummaryLlmProvider());
-        global.put("ai_summary_llm_api_url", FlexConfig.getStoredAiSummaryLlmApiUrl());
-        global.put("ai_summary_llm_api_key", FlexConfig.getAiSummaryLlmApiKey());
-        global.put("ai_summary_llm_model", FlexConfig.getAiSummaryLlmModel());
         global.put("ai_summary_llm_model_ref", FlexConfig.getAiSummaryLlmModelRef());
         global.put("ai_summary_llm_prompt", FlexConfig.getAiSummaryLlmPrompt());
         LinkedHashMap<String, Object> llmProviders = new LinkedHashMap<>();
@@ -192,32 +184,8 @@ public class FlexFileManager {
         if (global.has("translation_deepl_api_key")) {
             FlexConfig.setDeepLApiKey(global.get("translation_deepl_api_key").getAsString());
         }
-        if (global.has("translation_llm_provider")) {
-            FlexConfig.setTranslationLlmProvider(global.get("translation_llm_provider").getAsInt());
-        }
-        if (global.has("translation_llm_api_url")) {
-            FlexConfig.setLlmApiUrl(global.get("translation_llm_api_url").getAsString());
-        }
-        if (global.has("translation_llm_api_key")) {
-            FlexConfig.setLlmApiKey(global.get("translation_llm_api_key").getAsString());
-        }
-        if (global.has("translation_llm_model")) {
-            FlexConfig.setLlmModel(global.get("translation_llm_model").getAsString());
-        }
         if (global.has("translation_llm_prompt")) {
             FlexConfig.setLlmPrompt(global.get("translation_llm_prompt").getAsString());
-        }
-        if (global.has("ai_summary_llm_provider")) {
-            FlexConfig.setAiSummaryLlmProvider(global.get("ai_summary_llm_provider").getAsInt());
-        }
-        if (global.has("ai_summary_llm_api_url")) {
-            FlexConfig.setAiSummaryLlmApiUrl(global.get("ai_summary_llm_api_url").getAsString());
-        }
-        if (global.has("ai_summary_llm_api_key")) {
-            FlexConfig.setAiSummaryLlmApiKey(global.get("ai_summary_llm_api_key").getAsString());
-        }
-        if (global.has("ai_summary_llm_model")) {
-            FlexConfig.setAiSummaryLlmModel(global.get("ai_summary_llm_model").getAsString());
         }
         if (global.has("ai_summary_llm_prompt")) {
             FlexConfig.setAiSummaryLlmPrompt(global.get("ai_summary_llm_prompt").getAsString());

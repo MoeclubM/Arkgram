@@ -1473,11 +1473,11 @@ public class TranslateController extends BaseController {
             final PendingPollTranslation pendingTranslation1 = pendingTranslation;
             pendingTranslation.runnable = () -> {
                 synchronized (TranslateController.this) {
-                    ArrayList<PendingTranslation> dialogPendingTranslations1 = pendingTranslations.get(dialogId);
+                    ArrayList<PendingPollTranslation> dialogPendingTranslations1 = pendingPollTranslations.get(dialogId);
                     if (dialogPendingTranslations1 != null) {
                         dialogPendingTranslations1.remove(pendingTranslation1);
                         if (dialogPendingTranslations1.isEmpty()) {
-                            pendingTranslations.remove(dialogId);
+                            pendingPollTranslations.remove(dialogId);
                         }
                     }
                 }

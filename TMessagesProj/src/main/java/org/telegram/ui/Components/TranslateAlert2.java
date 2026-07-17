@@ -50,6 +50,7 @@ import com.google.common.base.Charsets;
 //import com.google.mlkit.nl.translate.TranslatorOptions;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.telegram.messenger.AndroidUtilities;
@@ -80,6 +81,7 @@ import org.telegram.ui.Cells.TextSelectionHelper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -557,7 +559,8 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             LanguageDetector.detectLanguage(text, lng -> {
                 alternativeTranslate(text, lng, toLng, done);
             }, e -> {
-                alternativeTranslate(text, "en", toLng, done);
+                String message = e != null ? e.getMessage() : null;
+                AndroidUtilities.runOnUIThread(() -> done.run(null, false, TextUtils.isEmpty(message) ? LocaleController.getString(R.string.TranslationFailedAlert2) : message));
             });
             return;
         }
@@ -606,9 +609,13 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         if (connection == null) {
             return null;
         }
+        InputStream stream = errorStream ? connection.getErrorStream() : connection.getInputStream();
+        if (stream == null) {
+            return null;
+        }
         Reader reader = null;
         try {
-            reader = new BufferedReader(new InputStreamReader(errorStream ? connection.getErrorStream() : connection.getInputStream(), Charsets.UTF_8));
+            reader = new BufferedReader(new InputStreamReader(stream, Charsets.UTF_8));
             StringBuilder builder = new StringBuilder();
             int c;
             while ((c = reader.read()) != -1) {
@@ -649,12 +656,12 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
         try {
             int responseCode = connection != null ? connection.getResponseCode() : 0;
-            if (responseCode > 0) {
+            if (responseCode >= 400) {
                 return LocaleController.getString(R.string.FlexTranslationRequestFailed) + " (" + responseCode + ")";
             }
         } catch (Exception ignore) {
         }
-        return LocaleController.getString(R.string.FlexTranslationRequestFailed);
+        return null;
     }
 
     private static String getDeepLLanguage(String language, boolean target) {
@@ -662,11 +669,20 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             return null;
         }
         String normalized = language.toLowerCase(Locale.US).replace('_', '-');
+        if (TranslateController.UNKNOWN_LANGUAGE.equals(normalized)) {
+            return null;
+        }
         if ("nb".equals(normalized)) {
             normalized = "no";
         }
-        if ("zh".equals(normalized) || normalized.startsWith("zh-")) {
-            return "ZH";
+        if ("zh-hant".equals(normalized) || "zh-tw".equals(normalized) || "zh-hk".equals(normalized) || "zh-mo".equals(normalized)) {
+            return "ZH-HANT";
+        }
+        if ("zh".equals(normalized) || "zh-hans".equals(normalized) || "zh-cn".equals(normalized) || "zh-sg".equals(normalized)) {
+            return "ZH-HANS";
+        }
+        if ("es-419".equals(normalized)) {
+            return target ? "ES-419" : "ES";
         }
         if ("pt-br".equals(normalized)) {
             return target ? "PT-BR" : "PT";
@@ -764,11 +780,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                                 done.run(result, false, error);
                                 return;
                             }
-                            try {
-                                done.run(result, false, null);
-                            } catch (Exception e) {
-                                done.run(null, false, e.getMessage());
-                            }
+                            done.run(result, false, null);
                         });
                         return;
                     }
@@ -802,13 +814,20 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                             done.run(finalResult, false, null);
                     });
                 } catch (Exception e) {
-                    String errorMessage = e.getMessage();
-                    if (TextUtils.isEmpty(errorMessage) || errorMessage.startsWith("org.json.")) {
-                        try {
-                            responseText = readConnectionText(connection, true);
-                        } catch (Exception ignore) {
+                    try {
+                        String errorResponseText = readConnectionText(connection, true);
+                        if (!TextUtils.isEmpty(errorResponseText)) {
+                            responseText = errorResponseText;
                         }
-                        errorMessage = getProviderErrorMessage(finalProvider, connection, responseText);
+                    } catch (Exception readError) {
+                        FileLog.e(readError);
+                    }
+                    String errorMessage = getProviderErrorMessage(finalProvider, connection, responseText);
+                    if (TextUtils.isEmpty(errorMessage)) {
+                        errorMessage = e instanceof JSONException ? LocaleController.getString(R.string.FlexTranslationInvalidResponse) : e.getMessage();
+                    }
+                    if (TextUtils.isEmpty(errorMessage)) {
+                        errorMessage = LocaleController.getString(R.string.FlexTranslationRequestFailed);
                     }
                     FileLog.e(e);
                     try {

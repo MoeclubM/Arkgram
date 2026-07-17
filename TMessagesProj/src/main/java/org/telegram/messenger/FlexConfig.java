@@ -461,17 +461,14 @@ public class FlexConfig {
     }
 
     public static int getTranslationProvider() {
-        if (prefs().contains("flex_translation_provider")) {
-            return prefs().getInt("flex_translation_provider", TRANSLATION_PROVIDER_TELEGRAM);
-        }
-        if (prefs().contains("flex_prefer_telegram_translate")) {
-            return prefs().getBoolean("flex_prefer_telegram_translate", true) ? TRANSLATION_PROVIDER_TELEGRAM : TRANSLATION_PROVIDER_GOOGLE;
-        }
-        return TRANSLATION_PROVIDER_TELEGRAM;
+        return prefs().getInt("flex_translation_provider", TRANSLATION_PROVIDER_TELEGRAM);
     }
 
     public static void setTranslationProvider(int value) {
-        prefs().edit().putInt("flex_translation_provider", value).remove("flex_prefer_telegram_translate").apply();
+        if (value < TRANSLATION_PROVIDER_TELEGRAM || value > TRANSLATION_PROVIDER_LLM) {
+            throw new IllegalArgumentException("Unknown translation provider: " + value);
+        }
+        prefs().edit().putInt("flex_translation_provider", value).apply();
     }
 
     public static boolean isTelegramTranslatePreferred() {
@@ -504,38 +501,6 @@ public class FlexConfig {
         return "flex_llm_provider_" + provider + "_" + suffix;
     }
 
-    private static int getLegacyTranslationLlmProvider() {
-        return prefs().getInt("flex_translation_llm_provider", LLM_PROVIDER_OPENAI);
-    }
-
-    private static int getLegacyAiSummaryLlmProvider() {
-        return prefs().getInt("flex_ai_summary_llm_provider", LLM_PROVIDER_OPENAI);
-    }
-
-    private static String getLegacyTranslationLlmApiUrl() {
-        return clean(prefs().getString("flex_translation_llm_api_url", ""));
-    }
-
-    private static String getLegacyAiSummaryLlmApiUrl() {
-        return clean(prefs().getString("flex_ai_summary_llm_api_url", ""));
-    }
-
-    private static String getLegacyTranslationLlmApiKey() {
-        return clean(prefs().getString("flex_translation_llm_api_key", ""));
-    }
-
-    private static String getLegacyAiSummaryLlmApiKey() {
-        return clean(prefs().getString("flex_ai_summary_llm_api_key", ""));
-    }
-
-    private static String getLegacyTranslationLlmModel() {
-        return clean(prefs().getString("flex_translation_llm_model", ""));
-    }
-
-    private static String getLegacyAiSummaryLlmModel() {
-        return clean(prefs().getString("flex_ai_summary_llm_model", ""));
-    }
-
     private static ArrayList<String> splitModelList(String value) {
         LinkedHashSet<String> models = new LinkedHashSet<>();
         String[] parts = clean(value).replace('\r', '\n').split("[,\n]");
@@ -563,13 +528,6 @@ public class FlexConfig {
         return builder.toString();
     }
 
-    private static String mergeModelLists(String first, String second) {
-        LinkedHashSet<String> models = new LinkedHashSet<>();
-        models.addAll(splitModelList(first));
-        models.addAll(splitModelList(second));
-        return joinModelList(models);
-    }
-
     public static String makeLlmModelRef(int provider, String model) {
         String value = clean(model);
         return value.isEmpty() ? "" : provider + ":" + value;
@@ -582,8 +540,9 @@ public class FlexConfig {
             return -1;
         }
         try {
-            return Integer.parseInt(value.substring(0, index));
-        } catch (Exception ignore) {
+            int provider = Integer.parseInt(value.substring(0, index));
+            return provider >= LLM_PROVIDER_CUSTOM && provider <= LLM_PROVIDER_ANTHROPIC ? provider : -1;
+        } catch (NumberFormatException ignore) {
             return -1;
         }
     }
@@ -597,19 +556,8 @@ public class FlexConfig {
         return clean(value.substring(index + 1));
     }
 
-    private static String getLegacyTranslationLlmModelRef() {
-        String model = getLegacyTranslationLlmModel();
-        return model.isEmpty() ? "" : makeLlmModelRef(getLegacyTranslationLlmProvider(), model);
-    }
-
-    private static String getLegacyAiSummaryLlmModelRef() {
-        String model = getLegacyAiSummaryLlmModel();
-        return model.isEmpty() ? "" : makeLlmModelRef(getLegacyAiSummaryLlmProvider(), model);
-    }
-
     public static String getTranslationLlmModelRef() {
-        String value = clean(prefs().getString("flex_translation_llm_model_ref", ""));
-        return value.isEmpty() ? getLegacyTranslationLlmModelRef() : value;
+        return clean(prefs().getString("flex_translation_llm_model_ref", ""));
     }
 
     public static void setTranslationLlmModelRef(String value) {
@@ -617,8 +565,7 @@ public class FlexConfig {
     }
 
     public static String getAiSummaryLlmModelRef() {
-        String value = clean(prefs().getString("flex_ai_summary_llm_model_ref", ""));
-        return value.isEmpty() ? getLegacyAiSummaryLlmModelRef() : value;
+        return clean(prefs().getString("flex_ai_summary_llm_model_ref", ""));
     }
 
     public static void setAiSummaryLlmModelRef(String value) {
@@ -634,6 +581,9 @@ public class FlexConfig {
     }
 
     public static void setProviderApiType(int provider, int value) {
+        if (value < LLM_API_TYPE_CHAT_COMPLETIONS || value > LLM_API_TYPE_CLAUDE_MESSAGES) {
+            throw new IllegalArgumentException("Unknown LLM API type: " + value);
+        }
         int oldType = getProviderApiType(provider);
         String storedUrl = getStoredProviderApiUrl(provider);
         SharedPreferences.Editor editor = prefs().edit().putInt(llmProviderKey(provider, "api_type"), value);
@@ -644,18 +594,7 @@ public class FlexConfig {
     }
 
     public static String getProviderApiUrl(int provider) {
-        String value = getStoredProviderApiUrl(provider);
-        int apiType = getProviderApiType(provider);
-        if (!value.isEmpty()) {
-            return resolveLlmApiUrl(provider, apiType, value);
-        }
-        if (provider == getLegacyTranslationLlmProvider()) {
-            value = getLegacyTranslationLlmApiUrl();
-        }
-        if (value.isEmpty() && provider == getLegacyAiSummaryLlmProvider()) {
-            value = getLegacyAiSummaryLlmApiUrl();
-        }
-        return resolveLlmApiUrl(provider, apiType, value);
+        return resolveLlmApiUrl(provider, getProviderApiType(provider), getStoredProviderApiUrl(provider));
     }
 
     public static void setProviderApiUrl(int provider, String value) {
@@ -667,17 +606,7 @@ public class FlexConfig {
     }
 
     public static String getProviderApiKey(int provider) {
-        String value = getStoredProviderApiKey(provider);
-        if (!value.isEmpty()) {
-            return value;
-        }
-        if (provider == getLegacyTranslationLlmProvider()) {
-            value = getLegacyTranslationLlmApiKey();
-        }
-        if (value.isEmpty() && provider == getLegacyAiSummaryLlmProvider()) {
-            value = getLegacyAiSummaryLlmApiKey();
-        }
-        return value;
+        return getStoredProviderApiKey(provider);
     }
 
     public static void setProviderApiKey(int provider, String value) {
@@ -689,13 +618,7 @@ public class FlexConfig {
     }
 
     public static String getProviderModelsText(int provider) {
-        String value = getStoredProviderModelsText(provider);
-        if (!value.isEmpty()) {
-            return joinModelList(splitModelList(value));
-        }
-        String translationModels = provider == getLegacyTranslationLlmProvider() ? getLegacyTranslationLlmModel() : "";
-        String summaryModels = provider == getLegacyAiSummaryLlmProvider() ? getLegacyAiSummaryLlmModel() : "";
-        return mergeModelLists(translationModels, summaryModels);
+        return joinModelList(splitModelList(getStoredProviderModelsText(provider)));
     }
 
     public static ArrayList<String> getProviderModelList(int provider) {
@@ -708,11 +631,7 @@ public class FlexConfig {
 
     public static int getTranslationLlmProvider() {
         int provider = getLlmProviderFromRef(getTranslationLlmModelRef());
-        return provider >= 0 ? provider : getLegacyTranslationLlmProvider();
-    }
-
-    public static void setTranslationLlmProvider(int value) {
-        prefs().edit().putInt("flex_translation_llm_provider", value).apply();
+        return provider >= 0 ? provider : LLM_PROVIDER_OPENAI;
     }
 
     public static String getLlmApiUrl() {
@@ -723,39 +642,12 @@ public class FlexConfig {
         return getProviderApiType(getTranslationLlmProvider());
     }
 
-    public static String getStoredLlmApiUrl() {
-        String value = getStoredProviderApiUrl(getTranslationLlmProvider());
-        return value.isEmpty() ? getLegacyTranslationLlmApiUrl() : value;
-    }
-
-    public static void setLlmApiUrl(String value) {
-        setProviderApiUrl(getTranslationLlmProvider(), value);
-    }
-
     public static String getLlmApiKey() {
         return getProviderApiKey(getTranslationLlmProvider());
     }
 
-    public static void setLlmApiKey(String value) {
-        setProviderApiKey(getTranslationLlmProvider(), value);
-    }
-
     public static String getLlmModel() {
-        String value = getLlmModelFromRef(getTranslationLlmModelRef());
-        return value.isEmpty() ? getLegacyTranslationLlmModel() : value;
-    }
-
-    public static void setLlmModel(String value) {
-        String model = clean(value);
-        int provider = getTranslationLlmProvider();
-        setTranslationLlmModelRef(makeLlmModelRef(provider, model));
-        if (!model.isEmpty()) {
-            ArrayList<String> models = getProviderModelList(provider);
-            if (!models.contains(model)) {
-                models.add(model);
-                setProviderModelsText(provider, joinModelList(models));
-            }
-        }
+        return getLlmModelFromRef(getTranslationLlmModelRef());
     }
 
     public static String getLlmPrompt() {
@@ -769,11 +661,7 @@ public class FlexConfig {
 
     public static int getAiSummaryLlmProvider() {
         int provider = getLlmProviderFromRef(getAiSummaryLlmModelRef());
-        return provider >= 0 ? provider : getLegacyAiSummaryLlmProvider();
-    }
-
-    public static void setAiSummaryLlmProvider(int value) {
-        prefs().edit().putInt("flex_ai_summary_llm_provider", value).apply();
+        return provider >= 0 ? provider : LLM_PROVIDER_OPENAI;
     }
 
     public static String getAiSummaryLlmApiUrl() {
@@ -784,39 +672,12 @@ public class FlexConfig {
         return getProviderApiType(getAiSummaryLlmProvider());
     }
 
-    public static String getStoredAiSummaryLlmApiUrl() {
-        String value = getStoredProviderApiUrl(getAiSummaryLlmProvider());
-        return value.isEmpty() ? getLegacyAiSummaryLlmApiUrl() : value;
-    }
-
-    public static void setAiSummaryLlmApiUrl(String value) {
-        setProviderApiUrl(getAiSummaryLlmProvider(), value);
-    }
-
     public static String getAiSummaryLlmApiKey() {
         return getProviderApiKey(getAiSummaryLlmProvider());
     }
 
-    public static void setAiSummaryLlmApiKey(String value) {
-        setProviderApiKey(getAiSummaryLlmProvider(), value);
-    }
-
     public static String getAiSummaryLlmModel() {
-        String value = getLlmModelFromRef(getAiSummaryLlmModelRef());
-        return value.isEmpty() ? getLegacyAiSummaryLlmModel() : value;
-    }
-
-    public static void setAiSummaryLlmModel(String value) {
-        String model = clean(value);
-        int provider = getAiSummaryLlmProvider();
-        setAiSummaryLlmModelRef(makeLlmModelRef(provider, model));
-        if (!model.isEmpty()) {
-            ArrayList<String> models = getProviderModelList(provider);
-            if (!models.contains(model)) {
-                models.add(model);
-                setProviderModelsText(provider, joinModelList(models));
-            }
-        }
+        return getLlmModelFromRef(getAiSummaryLlmModelRef());
     }
 
     public static String getAiSummaryLlmPrompt() {

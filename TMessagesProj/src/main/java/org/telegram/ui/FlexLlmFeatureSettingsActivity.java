@@ -100,10 +100,6 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
         return getProviderTitle(provider) + " [" + getApiTypeTitle(FlexConfig.getProviderApiType(provider)) + "]";
     }
 
-    private String getModelRef() {
-        return summary ? FlexConfig.getAiSummaryLlmModelRef() : FlexConfig.getTranslationLlmModelRef();
-    }
-
     private void setModelRef(String value) {
         if (summary) {
             FlexConfig.setAiSummaryLlmModelRef(value);
@@ -114,14 +110,6 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
 
     private String getModel() {
         return summary ? FlexConfig.getAiSummaryLlmModel() : FlexConfig.getLlmModel();
-    }
-
-    private void setModel(String value) {
-        if (summary) {
-            FlexConfig.setAiSummaryLlmModel(value);
-        } else {
-            FlexConfig.setLlmModel(value);
-        }
     }
 
     private String getPrompt() {

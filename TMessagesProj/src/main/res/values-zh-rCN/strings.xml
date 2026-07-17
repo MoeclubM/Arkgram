@@ -77,7 +77,7 @@
     <string name="FlexNewMarkdownParser">使用新版 Markdown 解析器</string>
     <string name="FlexMarkdownParseLinks">解析 Markdown 链接</string>
     <string name="FlexMarkdownInfo">Nagram 风格的 Markdown 可渲染代码块、剧透、删除线和行内链接。</string>
-    <string name="FlexTranslationProvider">后备提供商</string>
+    <string name="FlexTranslationProvider">翻译提供商</string>
     <string name="FlexTranslationProviderTelegram">Telegram 翻译</string>
     <string name="FlexTranslationProviderGoogle">Google 翻译</string>
     <string name="FlexTranslationProviderGoogleCn">Google 翻译（中国）</string>
@@ -138,6 +138,7 @@
     <string name="FlexLlmApiUrlMissing">未设置 LLM API URL。</string>
     <string name="FlexLlmModelMissing">未设置 LLM 模型。</string>
     <string name="FlexLlmInvalidResponse">LLM 提供商返回了无效响应。</string>
+    <string name="FlexLlmResponseIncomplete">LLM 提供商未完整生成响应。</string>
     <string name="FlexLlmRequestFailed">LLM 请求失败。</string>
     <string name="FlexAiSummarySettings">AI 摘要</string>
     <string name="FlexAiSummarySettingsInfo">从共享提供商列表中选择一个已配置模型，然后设置 AI 摘要使用的提示词。</string>
