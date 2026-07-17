@@ -1316,7 +1316,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             .add(NotificationCenter.needShowAlert)
             .add(NotificationCenter.wasUnableToFindCurrentLocation)
             .add(NotificationCenter.openArticle)
-            .add(NotificationCenter.hasNewContactsToImport)
             .add(NotificationCenter.needShowPlayServicesAlert)
             .add(NotificationCenter.fileLoaded)
             .add(NotificationCenter.fileLoadFailed)
