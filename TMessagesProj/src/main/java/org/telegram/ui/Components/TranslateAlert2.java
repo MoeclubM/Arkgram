@@ -785,9 +785,10 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                         return;
                     }
 
+                    String sourceLanguage = TextUtils.isEmpty(fromLng) || TranslateController.UNKNOWN_LANGUAGE.equals(fromLng) ? "auto" : fromLng;
                     String uri = "https://";
                     uri += finalProvider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN ? "translate.google.cn" : "translate.googleapis.com";
-                    uri += "/translate_a/single?client=gtx&sl=" + Uri.encode(fromLng) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
+                    uri += "/translate_a/single?client=gtx&sl=" + Uri.encode(sourceLanguage) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
                     uri += text;
                     connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
                     connection.setConnectTimeout(15000);
