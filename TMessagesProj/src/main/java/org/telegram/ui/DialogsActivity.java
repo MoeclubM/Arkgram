@@ -86,12 +86,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
 import androidx.core.math.MathUtils;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
+import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
@@ -1119,7 +1120,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     blurredView.draw(canvas);
                 }
             }
-            if (!hasMainTabs) {
+            if (!hasMainTabs && communityId == 0) {
                 AndroidUtilities.drawNavigationBarProtection(canvas, this, getThemedColor(Theme.key_windowBackgroundWhite), navigationBarHeight);
             }
             wasDrawn = true;
@@ -1232,6 +1233,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             int keyboardSize = measureKeyboardHeight();
             setBottomClip(paddingBottom);
 
+            final int W = getMeasuredWidth();
+            final int H = getMeasuredHeight();
+
             for (int i = 0; i < count; i++) {
                 final View child = getChildAt(i);
                 if (child == null || child.getVisibility() == GONE) {
@@ -1255,10 +1259,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
                     case Gravity.CENTER_HORIZONTAL:
-                        childLeft = (r - l - width) / 2 + lp.leftMargin - lp.rightMargin;
+                        childLeft = (W - width) / 2 + lp.leftMargin - lp.rightMargin;
                         break;
                     case Gravity.RIGHT:
-                        childLeft = r - width - lp.rightMargin;
+                        childLeft = W - width - lp.rightMargin;
                         break;
                     case Gravity.LEFT:
                     default:
@@ -1270,10 +1274,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         childTop = lp.topMargin + getPaddingTop();
                         break;
                     case Gravity.CENTER_VERTICAL:
-                        childTop = ((b - paddingBottom) - t - height) / 2 + lp.topMargin - lp.bottomMargin;
+                        childTop = ((H - paddingBottom) - height) / 2 + lp.topMargin - lp.bottomMargin;
                         break;
                     case Gravity.BOTTOM:
-                        childTop = ((b - paddingBottom) - t) - height - lp.bottomMargin;
+                        childTop = ((H - paddingBottom)) - height - lp.bottomMargin;
                         break;
                     default:
                         childTop = lp.topMargin;
@@ -4829,7 +4833,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     topPanelLayout.setViewVisible(fragmentLocationContextViewWrapper, visibility == VISIBLE);
                 }
             };
-            fragmentLocationContextView.isInsideBubble = true;
             fragmentLocationContextViewWrapper.addView(fragmentLocationContextView);
 
             fragmentContextView = new FragmentContextView(context, this, false) {
@@ -4838,8 +4841,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     topPanelLayout.setViewVisible(fragmentContextViewWrapper, visibility == VISIBLE);
                 }
             };
-            fragmentContextView.isInsideBubble = true;
             fragmentContextViewWrapper.addView(fragmentContextView);
+            topPanelLayout.setCallFragmentContextView(fragmentContextView);
 
             dialogsHintCell = new DialogsHintCell(context);
             dialogsHintCell.setBackground(Theme.getSelectorDrawable(false));
@@ -8002,7 +8005,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
 
 
-            if ((!getMessagesController().isForum(dialogId) || isBotForumWithEmptyTopics(dialogId)) && (!selectedDialogs.isEmpty() || (initialDialogsType == DIALOGS_TYPE_FORWARD && selectAlertString != null))) {
+            if ((!getMessagesController().isForum(dialogId) && !getMessagesController().isCommunity(dialogId) || isBotForumWithEmptyTopics(dialogId)) && (!selectedDialogs.isEmpty() || (initialDialogsType == DIALOGS_TYPE_FORWARD && selectAlertString != null))) {
                 if (!selectedDialogs.contains(dialogId) && !checkCanWrite(dialogId)) {
                     return;
                 }
@@ -11659,6 +11662,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return folderId == 1;
     }
 
+    public boolean isCommunity() {
+        return communityId != 0;
+    }
+
     public int getType() {
         return initialDialogsType;
     }
@@ -13811,8 +13818,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
         windowInsetsStateHolder.setInsets(insets);
 
-        statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
-        navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+        final Insets systemInsets = AndroidUtilities.getDefaultWindowInsets(insets, false);
+        statusBarHeight = systemInsets.top;
+        navigationBarHeight = systemInsets.bottom;
         final int imeInsetHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
         if (this.imeInsetHeight != imeInsetHeight) {
             this.imeInsetHeight = imeInsetHeight;

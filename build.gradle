@@ -113,3 +113,15 @@ subprojects {
         }
     }
 }
+
+subprojects {
+    plugins.withId("com.android.application") {
+        android {
+            androidResources {
+                ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~:!optional:!licences:!*stmary*:!*eufb*'
+            }
+        }
+    }
+}
+
+

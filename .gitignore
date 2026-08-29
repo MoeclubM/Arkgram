@@ -11,3 +11,5 @@ TMessagesProj/jniRes/
 TMessagesProj/afat/
 TMessagesProj_App/afat/
 TMessagesProj_AppStandalone/afat/
+TMessagesProj/jni/ffmpeg/build_android
+/.cursor

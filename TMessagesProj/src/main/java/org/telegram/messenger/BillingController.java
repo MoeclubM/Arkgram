@@ -164,7 +164,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
         billingClientEmpty = true;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingProductDetailsUpdated);
     }
 
     private void switchBackFromInvoice() {
@@ -172,7 +172,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
         billingClientEmpty = false;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingProductDetailsUpdated);
     }
 
     public boolean isReady() {
@@ -570,3 +570,4 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         return "BILLING_UNKNOWN_ERROR";
     }
 }
+

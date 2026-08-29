@@ -14,7 +14,7 @@ import org.gradle.api.tasks.TaskAction
 import org.telegram.tlrpc.SchemeAllLayersParser
 import org.telegram.tlrpc.SchemeCodeGen
 import org.telegram.tlrpc.SchemeTlValidator
-import org.telegram.tlrpc.models.RulesRegistry
+import org.telegram.tlrpc.models.RulesHolder
 import org.telegram.tlrpc.models.TlObjectWithLayer
 import org.telegram.tlrpc.schema.TlSchemaJsonParser
 import org.telegram.tlrpc.telegram.TelegramCodeParser
@@ -23,7 +23,7 @@ import java.io.File
 
 abstract class GenerateSchemeTask : DefaultTask() {
     companion object {
-        const val LAYER = 228;
+        const val LAYER = 229;
     }
 
 
@@ -64,6 +64,8 @@ abstract class GenerateSchemeTask : DefaultTask() {
 
         val telegramClasses = TelegramCodeParser.parse(files)
         val tlSchemaFull = TlSchemaJsonParser.parse(resourcesDir, LAYER)
+        val tlSchemaFilter = tlSchemaFull.applyRules(RulesHolder.rules)
+
         val undefinedTelegramClasses = telegramClasses.groupedByConstructorAll.filterKeys {
             it !in tlSchemaFull.magicsAll
         }.values.flatten()
@@ -71,10 +73,11 @@ abstract class GenerateSchemeTask : DefaultTask() {
         File(outputDir, "not_linked_classes.txt")
             .writeText(undefinedTelegramClasses.map { it.toString() }.sorted().joinToString("\n"))
 
+        val totalHistory = tlSchemaFull.getAllConstructorsHistory()
         val classesByUniqueIds = telegramClasses.groupedByConstructorUnique
         val schema = SchemeAllLayersParser.parseAllLayers(resourcesDir)
 
-        val dep = RulesRegistry.rules.databaseTypes
+        val dep = RulesHolder.rules.databaseTypes
         val legacyConstrKeys = schema.schemes.map { s ->
             val types = dep
                 .mapNotNull { s.dependenciesTransitive[it] }
@@ -105,8 +108,13 @@ abstract class GenerateSchemeTask : DefaultTask() {
         val allMethods = (schema.methodsActual2 + schema.methodsLegacy2).toSet()
 
         val constructorTypesMap = allConstructors.groupBy { it.tl.key.name.type }
+        val enumTypes = constructorTypesMap.filter { entry ->
+            entry.value.none { it.tl.params.list.isNotEmpty() }
+        }
+
         val schemaIds = allConstructors.map { it.tl.key.constructorId } +
                 allMethods.map { it.tl.key.constructorId }
+        val schemaAllIds = schemaIds.toSet()
         val schemaUniqueIds = schemaIds.groupingBy { it }.eachCount().filterValues { it == 1 }.keys
         val constructorsByUniqueIds = allConstructors
             .filter { it.tl.key.constructorId in schemaUniqueIds }
@@ -173,7 +181,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
             ) {
                 needSuper = false
             }
-            if (!RulesRegistry.rules.filterConstructor(constructor.tl.key.name)) continue
+            if (!RulesHolder.rules.filterConstructor(constructor.tl.key.name)) continue
 
             sealedClassBuilder.addType(
                 SchemeCodeGen.generateDataClass(
@@ -222,7 +230,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         var testIndex = 0;
 
         for (constructor in constructorsSorted) {
-            if (!RulesRegistry.rules.filterConstructor(constructor.tl.key.name)) continue
+            if (!RulesHolder.rules.filterConstructor(constructor.tl.key.name)) continue
 
             val isEncrypted = constructor in encrypted
             val isLegacy = constructor.layerLast < LAYER

@@ -1,7 +1,19 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
-plugins {
-    id 'com.android.library'
+apply plugin: 'com.android.library'
+apply plugin: 'org.telegram.lottie-meta'
+apply plugin: 'idea'
+
+idea {
+    module {
+        excludeDirs += [
+            file('jni/third_party'),
+            file('jni/ffmpeg'),
+            file('jni/tlottie'),
+            file('jni/boringssl'),
+            file('jni/sqlite')
+        ]
+    }
 }
 
 repositories {
@@ -30,6 +42,7 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-cast-framework:22.3.1'
     implementation "androidx.mediarouter:mediarouter:1.8.1"
+    implementation 'com.google.zxing:core:3.5.4'
 
     implementation 'androidx.car.app:app:1.4.0'
     implementation 'androidx.car.app:app-projected:1.4.0'
@@ -39,7 +52,6 @@ dependencies {
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.6'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.firebase:firebase-messaging:25.0.2'
-    implementation 'com.google.firebase:firebase-config:23.1.0'
     implementation 'com.google.firebase:firebase-datatransport:20.0.1'
     implementation 'com.google.firebase:firebase-appindexing:20.0.0'
     implementation 'com.google.android.gms:play-services-maps:20.0.0'
@@ -55,18 +67,23 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.14.0'
     implementation 'com.google.guava:guava:33.6.0-android'
     implementation 'com.google.android.play:integrity:1.6.0'
+    implementation 'com.google.android.gms:play-services-safetynet:18.0.1'
+
     implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
     implementation 'com.google.android.gms:play-services-mlkit-image-labeling:16.0.8'
 
     implementation "androidx.credentials:credentials:1.6.0"
-    implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+    implementation "androidx.credentials:credentials-play-services-auth:1.6.0-alpha04"
 
     implementation "io.noties.markwon:core:4.6.2"
     implementation "io.noties.markwon:ext-strikethrough:4.6.2"
     implementation "io.noties.markwon:ext-tables:4.6.2"
     implementation "io.noties.markwon:html:4.6.2"
     implementation "io.noties.markwon:inline-parser:4.6.2"
-    implementation "io.noties.markwon:ext-latex:4.6.2"
+    implementation("io.noties.markwon:ext-latex:4.6.2") {
+        exclude group: 'ru.noties', module: 'jlatexmath-android'
+    }
+    api project(':jlatexmath')
 
 //    implementation 'com.google.mlkit:translate:17.0.3'
 
@@ -86,15 +103,12 @@ dependencies {
 }
 
 def defaultAbiFilters = ["arm64-v8a"]
-def ciAbiFilters = String.valueOf(project.findProperty('CI_ABI_FILTERS') ?: "")
-        .split(',')
-        .collect { it.trim() }
-        .findAll { !it.isEmpty() }
+def ciAbiFilters = String.valueOf(project.findProperty('CI_ABI_FILTERS') ?: "").split(',').collect { it.trim() }.findAll { !it.isEmpty() }
 def selectedAbiFilters = ciAbiFilters.isEmpty() ? defaultAbiFilters : ciAbiFilters
-def isWindows = String.valueOf(DefaultNativePlatform.currentOperatingSystem.toFamilyName() == OperatingSystemFamily.WINDOWS)
 android {
-    compileSdk = 37
-    ndkVersion = "21.4.7075529" // 26.3.11579264
+    compileSdkVersion 36
+    buildToolsVersion '36.0.0'
+    ndkVersion "27.2.12479018"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
@@ -104,112 +118,174 @@ android {
         }
     }
 
+    lintOptions {
+        disable 'MissingTranslation'
+        disable 'ExtraTranslation'
+        disable 'BlockedPrivateApi'
+    }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
 
-        coreLibraryDesugaringEnabled = true
+        coreLibraryDesugaringEnabled true
     }
 
 
     defaultConfig {
-        minSdk = 24
-        ndk {
-            abiFilters(*selectedAbiFilters)
-        }
+        minSdkVersion 21
+        targetSdkVersion 36
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
-        multiDexEnabled = true
+        multiDexEnabled true
 
         externalNativeBuild {
             cmake {
-                version = '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                version '3.22.1'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                targets 'tmessages.49'
             }
         }
-    }
-
-    buildFeatures {
-        buildConfig = true
     }
 
     buildTypes {
         debug {
             jniDebuggable true
             minifyEnabled false
-            shrinkResources = false
-            multiDexEnabled = true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
+            shrinkResources false
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
+            buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PRIVATE_URL") + "\""
             buildConfigField "boolean", "DEBUG_VERSION", "true"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "0"
         }
 
-        beta {
-            initWith debug
+        HA_private {
+            matchingFallbacks = ['release']
             jniDebuggable false
             minifyEnabled true
-            shrinkResources = false
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
+            ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
+            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PRIVATE") + "\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PRIVATE_URL") + "\""
+            buildConfigField "boolean", "DEBUG_VERSION", "true"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+            buildConfigField "boolean", "BUNDLE", "false"
+            buildConfigField "int", "VERSION_NUM", "1"
+        }
+
+        HA_public {
+            matchingFallbacks = ['release']
+            jniDebuggable false
+            minifyEnabled true
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
+            ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
+            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_PUBLIC") + "\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_PUBLIC_URL") + "\""
+            buildConfigField "boolean", "DEBUG_VERSION", "true"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
+            buildConfigField "boolean", "BUNDLE", "false"
+            buildConfigField "int", "VERSION_NUM", "4"
+        }
+
+        HA_hardcore {
+            matchingFallbacks = ['release']
+            jniDebuggable false
+            minifyEnabled true
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
+            ndk.debugSymbolLevel = 'FULL'
+            buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
+            buildConfigField "String", "APP_CENTER_HASH", "\"" + getProps("APP_CENTER_HASH_HARDCORE") + "\""
+            buildConfigField "String", "BETA_URL", "\"" + getProps("BETA_HARDCORE_URL") + "\""
+            buildConfigField "boolean", "DEBUG_VERSION", "true"
+            buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "true"
+            buildConfigField "boolean", "BUNDLE", "false"
+            buildConfigField "int", "VERSION_NUM", "5"
         }
 
         standalone {
+            matchingFallbacks = ['release']
             jniDebuggable false
             minifyEnabled true
-            multiDexEnabled = true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
+            buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "String", "BETA_URL", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "6"
         }
 
         release {
             jniDebuggable false
             minifyEnabled true
-            shrinkResources = false
-            multiDexEnabled = true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
+            shrinkResources false
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
             buildConfigField "String", "BUILD_VERSION_STRING", "\"" + APP_VERSION_NAME + "\""
+            buildConfigField "String", "APP_CENTER_HASH", "\"\""
+            buildConfigField "String", "BETA_URL", "\"\""
             buildConfigField "boolean", "DEBUG_VERSION", "false"
             buildConfigField "boolean", "DEBUG_PRIVATE_VERSION", "false"
             buildConfigField "boolean", "BUNDLE", "false"
-            buildConfigField "boolean", "BUILD_HOST_IS_WINDOWS", isWindows
             buildConfigField "int", "VERSION_NUM", "7"
         }
     }
 
-    namespace = 'org.telegram.messenger'
-    lint {
-        disable 'MissingTranslation', 'ExtraTranslation', 'BlockedPrivateApi'
-        targetSdk 36
-    }
-    testOptions {
-        targetSdk 36
-    }
+    namespace 'org.telegram.messenger'
 }
 
-def requestedTaskNames = gradle.startParameter.taskNames
-def publicBuildAllowed = !hasProperty("IS_PRIVATE") || !property("IS_PRIVATE").toBoolean()
+
+def getProps(String propName) {
+    def propsFile = rootProject.file('local.properties')
+    if (propsFile.exists()) {
+        def props = new Properties()
+        props.load(new FileInputStream(propsFile))
+        return props[propName]
+    } else {
+        return "";
+    }
+}
+apply plugin: 'com.google.gms.google-services'
 
 task checkVisibility {
     doFirst {
-        def isPrivateBuild = requestedTaskNames.find {
-            it.contains("Debug") || it.contains("Release")
+        def isPrivateBuild = project.gradle.startParameter.taskNames.find {
+            it.contains("HA_private") || it.contains("HA_hardcore") || it.contains("Debug") || it.contains("Release")
         }
-        if (!isPrivateBuild && !publicBuildAllowed) {
+        def isPublicAllowed = !project.hasProperty("IS_PRIVATE") || !project.property("IS_PRIVATE").toBoolean()
+        if (!isPrivateBuild && !isPublicAllowed) {
             throw new GradleException("Building public version of private code!")
+        }
+    }
+    doLast {
+        if (project.gradle.startParameter.taskNames.find { it.contains("HA_public") }) {
+            def privateBuild = file("${projectDir}_AppHockeyApp/afat/HA_private/Telegram-Beta.apk")
+            if (privateBuild.exists()) {
+                privateBuild.delete()
+            }
         }
     }
 }
 
 preBuild.dependsOn checkVisibility
+
+
+
+
+
