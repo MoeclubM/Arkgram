@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
 
       - name: Set up Java
         uses: actions/setup-java@v5.2.0
@@ -43,7 +45,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4.0.1
         with:
-          packages: 'platforms;android-36 build-tools;36.0.0 ndk;21.4.7075529 cmake;3.22.1'
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;27.2.12479018 cmake;3.22.1'
 
       - name: Prepare local.properties
         shell: bash
