@@ -245,6 +245,10 @@ android {
             buildConfigField "boolean", "BUNDLE", "false"
             buildConfigField "int", "VERSION_NUM", "7"
         }
+
+        beta {
+            initWith release
+        }
     }
 
     namespace 'org.telegram.messenger'
