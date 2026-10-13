@@ -169,8 +169,7 @@ void VideoCaptureInterfaceObject::setRotationUpdated(std::function<void(int)> ro
 VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::string deviceId, bool isScreenCapture, std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads) :
 _impl(threads->getMediaThread(), [deviceId, isScreenCapture, platformContext, threads]() {
 	return std::make_shared<VideoCaptureInterfaceObject>(deviceId, isScreenCapture, platformContext, *threads);
-}),
-_platformContext(platformContext) {
+}) {
 }
 
 VideoCaptureInterfaceImpl::~VideoCaptureInterfaceImpl() = default;
