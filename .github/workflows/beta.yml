@@ -80,6 +80,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew \
+            :TMessagesProj:compileBetaJavaWithJavac \
             :TMessagesProj_App:assembleAfatBeta \
             :TMessagesProj_App:bundleBundleAfatBeta \
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
