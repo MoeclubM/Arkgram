@@ -2918,8 +2918,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             if (LaunchActivity.instance != null) {
                                 LaunchActivity.instance.checkAppUpdate(true, null);
                             }
-                        } else if (BuildVars.isHuaweiStoreApp()) {
-                            Browser.openUrl(getContext(), BuildVars.HUAWEI_STORE_URL);
                         } else {
                             Browser.openUrl(getContext(), BuildVars.PLAYSTORE_APP_URL);
                         }
@@ -3409,8 +3407,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             if (LaunchActivity.instance != null) {
                                 LaunchActivity.instance.checkAppUpdate(true, null);
                             }
-                        } else if (BuildVars.isHuaweiStoreApp()) {
-                            Browser.openUrl(getContext(), BuildVars.HUAWEI_STORE_URL);
                         } else {
                             Browser.openUrl(getContext(), BuildVars.PLAYSTORE_APP_URL);
                         }
