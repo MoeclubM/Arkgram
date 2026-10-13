@@ -79,8 +79,8 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
+          ./gradlew :TMessagesProj:compileBetaJavaWithJavac --build-cache --configuration-cache --stacktrace
           ./gradlew \
-            :TMessagesProj:compileBetaJavaWithJavac \
             :TMessagesProj_App:assembleAfatBeta \
             :TMessagesProj_App:bundleBundleAfatBeta \
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
