@@ -120,6 +120,10 @@ def defaultAbiFilters = ["arm64-v8a"]
 def ciAbiFilters = String.valueOf(project.findProperty('CI_ABI_FILTERS') ?: "").split(',').collect { it.trim() }.findAll { !it.isEmpty() }
 def selectedAbiFilters = ciAbiFilters.isEmpty() ? defaultAbiFilters : ciAbiFilters
 android {
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
     ndkVersion "27.2.12479018"
