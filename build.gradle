@@ -118,6 +118,16 @@ subprojects {
 }
 
 subprojects {
+    plugins.withId("com.android.library") {
+        android {
+            buildTypes {
+                beta {
+                    initWith release
+                }
+            }
+        }
+    }
+
     plugins.withId("com.android.application") {
         android {
             androidResources {
