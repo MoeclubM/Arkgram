@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id 'org.telegram.build-app-plugin'
     id 'test-generator'
 }
 
@@ -83,7 +84,8 @@ android {
     }
 
     androidResources {
-        localeFilters += ["en", "ar", "de", "es", "it", "ko", "nl", "pt-rBR", "ru", "uk"]
+        noCompress += "pack"
+        localeFilters += ["zz"]
     }
 
     signingConfigs {
@@ -158,14 +160,9 @@ android {
 
         externalNativeBuild {
             cmake {
-<<<<<<< HEAD
                 version = '3.22.1'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
-=======
-                version '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 targets 'tmessages.49'
->>>>>>> upstream/master
             }
         }
 

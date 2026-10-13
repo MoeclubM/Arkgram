@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id 'org.telegram.build-app-plugin'
     id 'com.google.gms.google-services'
 }
 
@@ -75,6 +76,11 @@ android {
         targetCompatibility JavaVersion.VERSION_17
 
         coreLibraryDesugaringEnabled = true
+    }
+
+    androidResources {
+        noCompress += "pack"
+        localeFilters += ["zz"]
     }
 
     signingConfigs {
@@ -198,17 +204,10 @@ android {
     defaultConfig.versionCode = appVersionCode
 
     defaultConfig {
-<<<<<<< HEAD
         minSdk = 24
         targetSdk = 36
         versionName appVersionName
-        ndkVersion = "21.4.7075529"
-=======
-        minSdkVersion 21
-        targetSdkVersion 36
-        versionName APP_VERSION_NAME
-        ndkVersion "27.2.12479018"
->>>>>>> upstream/master
+        ndkVersion = "27.2.12479018"
 
         multiDexEnabled = true
 
@@ -216,14 +215,9 @@ android {
 
         externalNativeBuild {
             cmake {
-<<<<<<< HEAD
                 version = '3.22.1'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' // , '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
-=======
-                version '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' // , '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 targets 'tmessages.49'
->>>>>>> upstream/master
             }
         }
     }

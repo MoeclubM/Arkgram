@@ -9,7 +9,9 @@
 namespace tgcalls {
 
 VideoCaptureInterfaceObject::VideoCaptureInterfaceObject(std::string deviceId, bool isScreenCapture, std::shared_ptr<PlatformContext> platformContext, Threads &threads)
-: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(threads.getMediaThread(), threads.getWorkerThread(), isScreenCapture)), _platformContext(platformContext) {
+: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(threads.getMediaThread(), threads.getWorkerThread(), isScreenCapture)) {
+	_platformContext = platformContext;
+
 	switchToDevice(deviceId, isScreenCapture);
 }
 
@@ -217,10 +219,6 @@ void VideoCaptureInterfaceImpl::setOutput(std::shared_ptr<rtc::VideoSinkInterfac
 	_impl.perform([sink](VideoCaptureInterfaceObject *impl) {
 		impl->setOutput(sink);
 	});
-}
-
-std::shared_ptr<PlatformContext> VideoCaptureInterfaceImpl::getPlatformContext() {
-	return _platformContext;
 }
 
 ThreadLocalObject<VideoCaptureInterfaceObject> *VideoCaptureInterfaceImpl::object() {
