@@ -1,9 +1,11 @@
-"""Unified renderer for the new ArkGram boat logo (Design B).
+"""Unified renderer for the ArkGram boat logo.
 
 Single source of truth for the boat shape; regenerates every PNG asset and the
-vector drawable from these normalized coordinates.
+vector drawable, SVG and Lottie artwork from these normalized Bezier paths.
 """
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+import json
+import math
 import os
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,31 +16,83 @@ INK = (47, 42, 36, 255)   # #2F2A24 — same dark warm brown the app already use
 CREAM = (244, 226, 184, 255)  # #F4E2B8 — current launcher background
 WHITE = (255, 255, 255, 255)
 
-# Design B — normalized coordinates (multiplied by scale `s` and offset by (cx,cy)).
-# Tall left main sail, shorter right jib, wide flat hull.
-SAIL_MAIN = [(-0.02, -0.40), (-0.02,  0.10), (-0.36,  0.10)]
-SAIL_JIB  = [( 0.04, -0.28), ( 0.36,  0.10), ( 0.04,  0.10)]
-HULL      = [(-0.46,  0.14), ( 0.46,  0.14), ( 0.30,  0.42), (-0.30,  0.42)]
+# Vertices, incoming and outgoing tangents, in Lottie's relative-handle format.
+# Curved sails and a shallow, rounded hull retain clear gaps at notification size.
+BOAT_PATHS = [
+    ("Main sail",
+     [(-0.025, -0.425), (-0.025, 0.075), (-0.365, 0.075)],
+     [(-0.13, 0.11), (0, 0), (0, 0)],
+     [(0, 0), (0, 0), (0.055, -0.19)]),
+    ("Jib",
+     [(0.04, -0.29), (0.365, 0.075), (0.04, 0.075)],
+     [(0, 0), (-0.075, -0.15), (0, 0)],
+     [(0.135, 0.085), (0, 0), (0, 0)]),
+    ("Hull",
+     [(-0.46, 0.135), (0.46, 0.135), (0.29, 0.365),
+      (0.205, 0.405), (-0.205, 0.405), (-0.29, 0.365)],
+     [(0.04, 0.09), (-0.18, 0.012), (0.045, -0.05),
+      (0.036, 0), (0, 0), (0.022, 0.026)],
+     [(0.18, 0.012), (-0.04, 0.09), (-0.022, 0.026),
+      (0, 0), (-0.036, 0), (-0.045, -0.05)]),
+]
 
 DENSITIES = ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"]
 SCALE = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
 
 
+def boat_paths(cx: float, cy: float, s: float, rotation: float = 0):
+    angle = math.radians(rotation)
+    cos, sin = math.cos(angle), math.sin(angle)
+    for name, vertices, incoming, outgoing in BOAT_PATHS:
+        path = {"c": True}
+        for key, points in (("v", vertices), ("i", incoming), ("o", outgoing)):
+            path[key] = [[round(s * (x * cos - y * sin) + (cx if key == "v" else 0), 4),
+                          round(s * (x * sin + y * cos) + (cy if key == "v" else 0), 4)]
+                         for x, y in points]
+        yield name, path
+
+
+def path_data(path):
+    """Serialize the shared cubic paths for both Android and SVG."""
+    vertices = path["v"]
+    commands = [f"M{vertices[0][0]},{vertices[0][1]}"]
+    for i, (x, y) in enumerate(vertices):
+        j = (i + 1) % len(vertices)
+        end = vertices[j]
+        outgoing, incoming = path["o"][i], path["i"][j]
+        if outgoing == [0, 0] and incoming == [0, 0]:
+            commands.append(f"L{end[0]},{end[1]}")
+        else:
+            commands.append(f"C{x + outgoing[0]:.4f},{y + outgoing[1]:.4f} "
+                            f"{end[0] + incoming[0]:.4f},{end[1] + incoming[1]:.4f} {end[0]},{end[1]}")
+    return " ".join(commands) + " Z"
+
+
 def draw_boat(draw: ImageDraw.ImageDraw, cx: float, cy: float, s: float, color):
-    """Stamp Design B at (cx,cy) with overall scale s, in solid `color`."""
-    for poly in (SAIL_MAIN, SAIL_JIB, HULL):
-        pts = [(cx + dx * s, cy + dy * s) for dx, dy in poly]
+    for _, path in boat_paths(cx, cy, s):
+        pts = []
+        for i, start in enumerate(path["v"]):
+            j = (i + 1) % len(path["v"])
+            end = path["v"][j]
+            outgoing, incoming = path["o"][i], path["i"][j]
+            for step in range(32):
+                t = step / 32
+                pts.append(tuple((1 - t) ** 3 * start[k]
+                                 + 3 * (1 - t) ** 2 * t * (start[k] + outgoing[k])
+                                 + 3 * (1 - t) * t ** 2 * (end[k] + incoming[k])
+                                 + t ** 3 * end[k] for k in (0, 1)))
         draw.polygon(pts, fill=color)
 
 
 def render_transparent(w: int, h: int, color, fill_frac: float = 0.58) -> Image.Image:
     """Boat in `color` on transparent canvas. `fill_frac` controls the boat's
     width relative to the canvas (so design width 0.92*s ≈ fill_frac*min(w,h))."""
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    scale = 4
+    img = Image.new("RGBA", (w * scale, h * scale), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    s = min(w, h) * fill_frac / 0.92  # boat width = fill_frac * min(w,h)
-    draw_boat(d, w / 2, h / 2, s, color)
-    return img
+    s = min(w, h) * scale * fill_frac / 0.92
+    draw_boat(d, w * scale / 2, h * scale / 2, s, color)
+    return img.resize((w, h), Image.Resampling.LANCZOS)
 
 
 def render_background_clip(size: int, *, inset: float = 0.155) -> Image.Image:
@@ -81,7 +135,7 @@ def save(img: Image.Image, path: str):
 # ---- targeted regenerators ----
 
 def regen_icon_foreground():
-    """Adaptive-icon foreground layer: dark boat on transparent, 108dp safe zone.
+    """Adaptive-icon foreground layer: dark boat on transparent, 108dp canvas.
     Densities: mdpi=108, hdpi=162, xhdpi=216, xxhdpi=324, xxxhdpi=432.
     Variants: {,_round,_sa}. Same boat shape for every variant — variants live
     in the background drawables."""
@@ -119,7 +173,7 @@ def regen_notification():
 
 def regen_launchers():
     """Pre-composited launcher PNGs (Android < 8 fallback):
-    cream rounded square + dark boat.
+    white outer ring + cream circle + dark boat.
     Densities: mdpi=48, hdpi=72, xhdpi=96, xxhdpi=144, xxxhdpi=192."""
     base = 48
     written = 0
@@ -181,21 +235,20 @@ def regen_background_clips():
 
 def regen_intro_plane():
     """Boat texture for the OpenGL intro animation. Loaded with tint #FF2F2A24
-    in IntroActivity.java:789 — we just need the alpha silhouette.
-    Densities: mdpi=82x74, hdpi=123x111, xhdpi=164x148, xxhdpi=246x222.
-    No xxxhdpi (matches existing setup)."""
+    in IntroActivity.java — we just need the alpha silhouette.
+    Densities: mdpi=82x74 through xxxhdpi=328x296. The OpenGL mesh keeps
+    its original 82x74 logical size and animation."""
     base_w, base_h = 82, 74
     written = 0
-    for d in ["mdpi", "hdpi", "xhdpi", "xxhdpi"]:
+    for d in DENSITIES:
         w = int(base_w * SCALE[d])
         h = int(base_h * SCALE[d])
         # Use white because the texture is loaded with an explicit color in code;
         # only alpha matters. White preserves alpha cleanly across resamplers.
         img = render_transparent(w, h, WHITE, fill_frac=0.92)
         path = os.path.join(RES, f"drawable-{d}", "intro_tg_plane.png")
-        if os.path.exists(path):
-            save(img, path)
-            written += 1
+        save(img, path)
+        written += 1
     return written
 
 
@@ -225,12 +278,57 @@ def regen_dialogs_logo():
 def regen_logo_middle():
     """Round ArkGram emblem used by TermsOfServiceView."""
     written = 0
-    for d, size in (("xhdpi", 136), ("xxhdpi", 204)):
+    for d in DENSITIES:
+        size = int(68 * SCALE[d])
         path = os.path.join(RES, f"drawable-{d}", "logo_middle.png")
-        if os.path.exists(path):
-            save(render_launcher(size, fill_frac=0.52), path)
-            written += 1
+        save(render_launcher(size, fill_frac=0.52), path)
+        written += 1
     return written
+
+
+def regen_vectors():
+    paths = [path_data(path) for _, path in boat_paths(54, 54, 108 * 0.52 / 0.92)]
+    vector = ('<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
+              '    android:width="108dp" android:height="108dp"\n'
+              '    android:viewportWidth="108" android:viewportHeight="108">\n')
+    for path in paths:
+        vector += f'    <path android:fillColor="#FF2F2A24" android:pathData="{path}" />\n'
+    with open(os.path.join(RES, "drawable", "icon_plane.xml"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(vector + "</vector>\n")
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">\n'
+           '    <circle fill="#E8C88E" cx="75" cy="75" r="75" />\n')
+    for _, path in boat_paths(75, 75, 84 / 0.92):
+        svg += f'    <path fill="#FFFFFF" d="{path_data(path)}" />\n'
+    with open(os.path.join(RES, "raw", "qr_logo.svg"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(svg + "</svg>\n")
+    return 2
+
+
+def regen_animations():
+    """Replace only the artwork; preserve original timing, easing and effects."""
+    for name in ("plane_logo_plain", "qr_code_logo", "qr_code_logo_2"):
+        path = os.path.join(RES, "raw", name + ".json")
+        with open(path, encoding="utf-8") as f:
+            animation = json.load(f)
+        layer = next(layer for layer in animation["layers"] if layer["ind"] == 3)
+        color = layer["shapes"][0]["it"][1]["c"]["k"]
+        layer["nm"] = "Boat"
+        layer["shapes"] = []
+        # The original plane rocks around -49 degrees. Counter-rotate its artwork
+        # around the existing anchor so the boat stays upright with the same motion.
+        for part_name, shape in boat_paths(12.637, 41.19, 220, rotation=49):
+            layer["shapes"].append({"ty": "gr", "nm": part_name, "it": [
+                {"ty": "sh", "nm": "Path 1", "ks": {"a": 0, "k": shape}},
+                {"ty": "fl", "nm": "Fill 1", "c": {"a": 0, "k": color},
+                 "o": {"a": 0, "k": 100}, "r": 1},
+                {"ty": "tr", "p": {"a": 0, "k": [0, 0]}, "a": {"a": 0, "k": [0, 0]},
+                 "s": {"a": 0, "k": [100, 100]}, "r": {"a": 0, "k": 0},
+                 "o": {"a": 0, "k": 100}},
+            ]})
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(animation, f, ensure_ascii=False, separators=(",", ":"))
+            f.write("\n")
+    return 3
 
 
 def regen_all():
@@ -241,6 +339,8 @@ def regen_all():
     n5 = regen_background_clips()
     n6 = regen_dialogs_logo()
     n7 = regen_logo_middle()
+    n8 = regen_vectors()
+    n9 = regen_animations()
     print(f"icon_foreground:  {n1} files")
     print(f"notification:     {n2} files")
     print(f"launchers:        {n3} files")
@@ -248,7 +348,9 @@ def regen_all():
     print(f"background clips: {n5} files")
     print(f"dialogs logo:     {n6} files")
     print(f"logo middle:      {n7} files")
-    print(f"total:            {n1+n2+n3+n4+n5+n6+n7} files")
+    print(f"vectors:          {n8} files")
+    print(f"animations:       {n9} files")
+    print(f"total:            {n1+n2+n3+n4+n5+n6+n7+n8+n9} files")
 
 
 if __name__ == "__main__":

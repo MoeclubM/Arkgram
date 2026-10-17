@@ -1,0 +1,47 @@
+name: ArkGram Logo Assets
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'Tools/branding/**'
+      - 'TMessagesProj/src/main/res/**'
+      - 'TMessagesProj_AppStandalone/src/main/res/**'
+      - '.github/workflows/branding.yml'
+  pull_request:
+    paths:
+      - 'Tools/branding/**'
+      - 'TMessagesProj/src/main/res/**'
+      - 'TMessagesProj_AppStandalone/src/main/res/**'
+      - '.github/workflows/branding.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-logo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Install renderers
+        run: |
+          python -m pip install Pillow==12.3.0
+          npm install --prefix "$RUNNER_TEMP/branding" lottie-web@5.13.0 playwright@1.56.1
+          "$RUNNER_TEMP/branding/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify generated assets and render animations
+        env:
+          NODE_PATH: ${{ runner.temp }}/branding/node_modules
+        run: python Tools/branding/verify_logo.py
+      - name: Upload rendered animation previews
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: boat-logo-preview
+          path: branding-preview/
+          if-no-files-found: error
