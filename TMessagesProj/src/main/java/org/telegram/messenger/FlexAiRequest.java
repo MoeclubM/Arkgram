@@ -85,7 +85,7 @@ public class FlexAiRequest {
                     TLRPC.TL_messages_composeRichMessageWithAI req = (TLRPC.TL_messages_composeRichMessageWithAI) method;
                     String instruction = composePrompt(req.proofread, req.emojify, req.translate_to_lang, req.tone);
                     if (req.text == null) {
-                        requestText(instruction + " Generate the requested content using Markdown. Return only the content.", "", (text, error) -> {
+                        requestText("Generate the article requested by the user using Markdown. Return only the article content.", ((TL_aicompose.inputAiComposeToneSingleUse) req.tone).custom_prompt, (text, error) -> {
                             TLRPC.TL_composedRichMessageWithAI result = new TLRPC.TL_composedRichMessageWithAI();
                             if (error == null) result.result = RichMessageConvert.fromCharSequence(MessageObject.formatTextWithEntities(entities(text, true)));
                             finish(error == null ? result : null, error);
