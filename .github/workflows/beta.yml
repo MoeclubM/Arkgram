@@ -112,6 +112,11 @@ jobs:
             [[ "$package_info" == *"versionName='${ORG_GRADLE_PROJECT_APP_VERSION_NAME}'"* ]]
             [[ "$package_info" == *"versionCode='$((ORG_GRADLE_PROJECT_APP_VERSION_CODE * 10 + 9))'"* ]]
           done
+          python Tools/ci/check_native_pages.py \
+            TMessagesProj_App/build/outputs/apk/afat/beta/*.apk \
+            TMessagesProj_App/build/outputs/bundle/bundleAfatBeta/*.aab \
+            TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk \
+            TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab
 
       - name: Upload app beta APK
         uses: actions/upload-artifact@v7.0.1

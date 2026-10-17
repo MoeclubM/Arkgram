@@ -3,6 +3,7 @@ name: ArkGram Release Builds
 run-name: ArkGram Release Builds · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*'
@@ -54,9 +55,13 @@ jobs:
       - name: Compute CI version
         shell: bash
         run: |
-          tag_name="${GITHUB_REF_NAME#v}"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${tag_name}" >> "$GITHUB_ENV"
+          version_name="$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version_name="${GITHUB_REF_NAME#v}"
+          fi
+          base_code="$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((base_code + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${version_name}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
         shell: bash
@@ -82,9 +87,26 @@ jobs:
             :TMessagesProj_App:bundleBundleAfatRelease \
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
             :TMessagesProj_AppStandalone:bundleAfatStandalone \
+            -PAPP_VERSION_CODE="$ORG_GRADLE_PROJECT_APP_VERSION_CODE" \
+            -PAPP_VERSION_NAME="$ORG_GRADLE_PROJECT_APP_VERSION_NAME" \
             --build-cache --configuration-cache --stacktrace
 
+      - name: Check native library page sizes
+        shell: bash
+        run: |
+          python Tools/ci/check_native_pages.py \
+            TMessagesProj_App/build/outputs/apk/afat/release/*.apk \
+            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
+
+      - name: Upload Play release bundle
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
+          if-no-files-found: error
+          archive: false
+
       - name: Publish GitHub release binaries
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v3.0.0
         with:
           tag_name: ${{ github.ref_name }}
