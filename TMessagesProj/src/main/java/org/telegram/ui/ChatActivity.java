@@ -2999,6 +2999,7 @@ public class ChatActivity extends BaseFragment implements
             .add(NotificationCenter.botForumDraftUpdate)
             .add(NotificationCenter.botForumDraftDelete)
             .add(NotificationCenter.joinedGroup)
+            .addGlobal(NotificationCenter.flexAdBlockSettingsChanged)
             .addGlobal(NotificationCenter.emojiLoaded)
             .addGlobal(NotificationCenter.invalidateMotionBackground)
             .addGlobal(NotificationCenter.didSetNewWallpapper)
@@ -25014,15 +25015,9 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         ArrayList<MessageObject> messagesToAdd = new ArrayList<>();
-        int blockedSponsoredCount = 0;
-        MessageObject firstBlockedSponsoredMessage = null;
         for (int i = 0; i < res.messages.size(); i++) {
             MessageObject messageObject = res.messages.get(i);
             if (FlexConfig.isMessageBlocked(messageObject)) {
-                blockedSponsoredCount++;
-                if (firstBlockedSponsoredMessage == null) {
-                    firstBlockedSponsoredMessage = messageObject;
-                }
                 continue;
             }
             messagesToAdd.add(messageObject);
@@ -25056,9 +25051,6 @@ public class ChatActivity extends BaseFragment implements
                 }
             }
         }
-        if (blockedSponsoredCount > 0 && !UserObject.isBot(currentUser)) {
-            messagesToAdd.add(createFlexAdBlockCollapsedMessage(firstBlockedSponsoredMessage, blockedSponsoredCount));
-        }
         sponsoredMessagesAdded = true;
         if (UserObject.isBot(currentUser)) {
             botSponsoredMessage = messagesToAdd.isEmpty() ? null : messagesToAdd.get(0);
@@ -25075,55 +25067,25 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void applyAdBlockSettings() {
-        if (chatMode != 0) {
-            return;
-        }
-        HashSet<Long> blockedGroupIds = new HashSet<>();
-        for (int i = 0; i < messages.size(); ++i) {
-            MessageObject messageObject = messages.get(i);
-            if (FlexConfig.isMessageBlocked(messageObject) && messageObject.hasValidGroupId()) {
-                blockedGroupIds.add(messageObject.getGroupIdForUse());
-            }
-        }
-        int blockedCount = 0;
-        int insertIndex = -1;
-        MessageObject firstBlockedMessage = null;
-        for (int i = messages.size() - 1; i >= 0; --i) {
-            MessageObject messageObject = messages.get(i);
-            if (messageObject.messageOwner != null && messageObject.messageOwner.local_id == FlexConfig.AD_BLOCK_COLLAPSED_LOCAL_ID) {
-                if (!FlexConfig.isAdBlockEnabled() || FlexConfig.getAdBlockRuleCount() == 0) {
-                    removeMessageObject(messageObject);
-                }
-                continue;
-            }
-            boolean blocked = FlexConfig.isMessageBlocked(messageObject) || messageObject.hasValidGroupId() && blockedGroupIds.contains(messageObject.getGroupIdForUse());
-            if (messageObject.isSponsored() || blocked) {
-                if (blocked) {
-                    blockedCount++;
-                    insertIndex = i;
-                    firstBlockedMessage = messageObject;
-                }
-                removeMessageObject(messageObject);
-                if (!blocked && insertIndex > i) {
-                    insertIndex--;
+        if (chatMode != 0 || chatListView == null) return;
+        int anchorId = 0;
+        for (int i = 0; i < chatListView.getChildCount(); i++) {
+            View child = chatListView.getChildAt(i);
+            if (child instanceof ChatMessageCell) {
+                MessageObject message = ((ChatMessageCell) child).getMessageObject();
+                if (message.getId() > 0 && !message.isSponsored()) {
+                    anchorId = message.getId();
+                    break;
                 }
             }
         }
-        if (blockedCount > 0) {
-            if (insertIndex < 0 || insertIndex > messages.size()) {
-                insertIndex = 0;
-            }
-            messages.add(insertIndex, createFlexAdBlockCollapsedMessage(firstBlockedMessage, blockedCount));
-            if (chatAdapter != null && !chatAdapter.isFiltered) {
-                chatAdapter.notifyItemInserted(chatAdapter.messagesStartRow + insertIndex);
-            }
-        }
+        clearChatData(true);
         botSponsoredMessage = null;
         sponsoredMessagesAdded = false;
-        if (notPushedSponsoredMessages != null) {
-            notPushedSponsoredMessages.clear();
-        }
-        addSponsoredMessages(true);
+        if (notPushedSponsoredMessages != null) notPushedSponsoredMessages.clear();
+        startLoadFromMessageId = anchorId;
+        waitingForLoad.add(lastLoadIndex);
+        getMessagesController().loadMessages(dialog_id, mergeDialogId, false, AndroidUtilities.isTablet() ? 30 : 20, anchorId, 0, true, 0, classGuid, anchorId == 0 ? 2 : 3, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
         updateTopPanel(true);
     }
 

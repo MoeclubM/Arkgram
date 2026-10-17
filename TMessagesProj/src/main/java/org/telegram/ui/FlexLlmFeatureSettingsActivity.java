@@ -30,21 +30,28 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
 
     private static final int ID_MODEL = 1;
     private static final int ID_PROMPT = 2;
+    private static final int ID_PROVIDERS = 3;
 
-    private final boolean summary;
+    public static final int OFFICIAL_AI = 2;
+    private final int feature;
 
     public FlexLlmFeatureSettingsActivity(boolean summary) {
-        this.summary = summary;
+        this(summary ? 1 : 0);
+    }
+
+    public FlexLlmFeatureSettingsActivity(int feature) {
+        this.feature = feature;
     }
 
     @Override
     protected CharSequence getTitle() {
-        return summary ? getString(R.string.FlexAiSummarySettings) : getString(R.string.FlexTranslationLlmSettings);
+        return feature == OFFICIAL_AI ? getString(R.string.FlexOfficialAi) : feature == 1 ? getString(R.string.FlexAiSummarySettings) : getString(R.string.FlexTranslationLlmSettings);
     }
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getTitle()));
+        items.add(UItem.asButton(ID_PROVIDERS, R.drawable.msg2_data, getString(R.string.FlexLlmProviders)));
         items.add(UItem.asButton(ID_MODEL, R.drawable.msg2_data, getString(R.string.FlexLlmModel), formatPlainValue(getModel())));
         items.add(UItem.asButton(ID_PROMPT, R.drawable.menu_feature_code, getString(R.string.FlexLlmPrompt), formatPromptValue(getPrompt())));
         items.add(UItem.asShadow(getInfoText()));
@@ -52,7 +59,9 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ID_MODEL) {
+        if (item.id == ID_PROVIDERS) {
+            presentFragment(new FlexLlmSettingsActivity());
+        } else if (item.id == ID_MODEL) {
             showModelDialog();
         } else if (item.id == ID_PROMPT) {
             showTextValueDialog(getString(R.string.FlexLlmPrompt), getString(R.string.FlexLlmPromptHint), getPrompt(), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, true, this::setPrompt);
@@ -101,7 +110,9 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     }
 
     private void setModelRef(String value) {
-        if (summary) {
+        if (feature == OFFICIAL_AI) {
+            FlexConfig.setOfficialAiModelRef(value);
+        } else if (feature == 1) {
             FlexConfig.setAiSummaryLlmModelRef(value);
         } else {
             FlexConfig.setTranslationLlmModelRef(value);
@@ -109,15 +120,17 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     }
 
     private String getModel() {
-        return summary ? FlexConfig.getAiSummaryLlmModel() : FlexConfig.getLlmModel();
+        return feature == OFFICIAL_AI ? FlexConfig.getLlmModelFromRef(FlexConfig.getOfficialAiModelRef()) : feature == 1 ? FlexConfig.getAiSummaryLlmModel() : FlexConfig.getLlmModel();
     }
 
     private String getPrompt() {
-        return summary ? FlexConfig.getAiSummaryLlmPrompt() : FlexConfig.getLlmPrompt();
+        return feature == OFFICIAL_AI ? FlexConfig.getOfficialAiPrompt() : feature == 1 ? FlexConfig.getAiSummaryLlmPrompt() : FlexConfig.getLlmPrompt();
     }
 
     private void setPrompt(String value) {
-        if (summary) {
+        if (feature == OFFICIAL_AI) {
+            FlexConfig.setOfficialAiPrompt(value);
+        } else if (feature == 1) {
             FlexConfig.setAiSummaryLlmPrompt(value);
         } else {
             FlexConfig.setLlmPrompt(value);
@@ -125,14 +138,14 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     }
 
     private String getInfoText() {
-        return summary ? getString(R.string.FlexAiSummarySettingsInfo) : getString(R.string.FlexTranslationLlmSettingsInfo);
+        return feature == OFFICIAL_AI ? getString(R.string.FlexOfficialAiInfo) : feature == 1 ? getString(R.string.FlexAiSummarySettingsInfo) : getString(R.string.FlexTranslationLlmSettingsInfo);
     }
 
     private CharSequence formatPlainValue(String value) {
         if (TextUtils.isEmpty(value)) {
-            return getString(R.string.FlexLlmNotSet);
+            return getString(feature == OFFICIAL_AI ? R.string.FlexTranslationProviderTelegram : R.string.FlexLlmNotSet);
         }
-        int provider = summary ? FlexConfig.getAiSummaryLlmProvider() : FlexConfig.getTranslationLlmProvider();
+        int provider = feature == OFFICIAL_AI ? FlexConfig.getLlmProviderFromRef(FlexConfig.getOfficialAiModelRef()) : feature == 1 ? FlexConfig.getAiSummaryLlmProvider() : FlexConfig.getTranslationLlmProvider();
         return getProviderApiTitle(provider) + " / " + value;
     }
 
@@ -150,6 +163,10 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     private void showModelDialog() {
         ArrayList<String> refs = new ArrayList<>();
         ArrayList<CharSequence> items = new ArrayList<>();
+        if (feature == OFFICIAL_AI) {
+            refs.add("");
+            items.add(getString(R.string.FlexTranslationProviderTelegram));
+        }
         for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_ANTHROPIC; ++provider) {
             ArrayList<String> models = FlexConfig.getProviderModelList(provider);
             for (int i = 0; i < models.size(); ++i) {

@@ -34,7 +34,7 @@ public class FlexFileManager {
         LinkedHashMap<String, Object> global = new LinkedHashMap<>();
         LinkedHashMap<String, Object> account = new LinkedHashMap<>();
 
-        root.put("version", 6);
+        root.put("version", 7);
         root.put("exported_at", System.currentTimeMillis());
         root.put("current_account", currentAccount);
         root.put("global", global);
@@ -55,9 +55,9 @@ public class FlexFileManager {
         global.put("disable_ui_transparency", FlexConfig.isUiTransparencyDisabled());
         global.put("disable_ui_blur", FlexConfig.isUiBlurDisabled());
         global.put("disable_markdown", FlexConfig.isMarkdownDisabled());
-        global.put("new_markdown_parser", FlexConfig.isNewMarkdownParserEnabled());
         global.put("markdown_parse_links", FlexConfig.isMarkdownParseLinksEnabled());
         global.put("ad_block_enabled", FlexConfig.isAdBlockEnabled());
+        global.put("block_sponsored_ads", FlexConfig.isSponsoredAdBlockEnabled());
         global.put("ad_block_keywords", FlexConfig.getAdBlockKeywordsText());
         global.put("ad_blocked_message_ids", FlexConfig.getAdBlockedMessageIdsText());
         global.put("ad_blocked_message_rules", FlexConfig.getAdBlockedMessageRulesText());
@@ -70,6 +70,8 @@ public class FlexFileManager {
         global.put("translation_llm_prompt", FlexConfig.getLlmPrompt());
         global.put("ai_summary_llm_model_ref", FlexConfig.getAiSummaryLlmModelRef());
         global.put("ai_summary_llm_prompt", FlexConfig.getAiSummaryLlmPrompt());
+        global.put("official_ai_model_ref", FlexConfig.getOfficialAiModelRef());
+        global.put("official_ai_prompt", FlexConfig.getOfficialAiPrompt());
         LinkedHashMap<String, Object> llmProviders = new LinkedHashMap<>();
         for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_ANTHROPIC; ++provider) {
             LinkedHashMap<String, Object> config = new LinkedHashMap<>();
@@ -151,14 +153,14 @@ public class FlexFileManager {
         if (global.has("disable_markdown")) {
             FlexConfig.setMarkdownDisabled(global.get("disable_markdown").getAsBoolean());
         }
-        if (global.has("new_markdown_parser")) {
-            FlexConfig.setNewMarkdownParserEnabled(global.get("new_markdown_parser").getAsBoolean());
-        }
         if (global.has("markdown_parse_links")) {
             FlexConfig.setMarkdownParseLinksEnabled(global.get("markdown_parse_links").getAsBoolean());
         }
         if (global.has("ad_block_enabled")) {
             FlexConfig.setAdBlockEnabled(global.get("ad_block_enabled").getAsBoolean());
+        }
+        if (global.has("block_sponsored_ads")) {
+            FlexConfig.setSponsoredAdBlockEnabled(global.get("block_sponsored_ads").getAsBoolean());
         }
         if (global.has("ad_block_keywords")) {
             FlexConfig.setAdBlockKeywordsText(global.get("ad_block_keywords").getAsString());
@@ -183,6 +185,12 @@ public class FlexFileManager {
         }
         if (global.has("translation_deepl_api_key")) {
             FlexConfig.setDeepLApiKey(global.get("translation_deepl_api_key").getAsString());
+        }
+        if (global.has("official_ai_model_ref")) {
+            FlexConfig.setOfficialAiModelRef(global.get("official_ai_model_ref").getAsString());
+        }
+        if (global.has("official_ai_prompt")) {
+            FlexConfig.setOfficialAiPrompt(global.get("official_ai_prompt").getAsString());
         }
         if (global.has("translation_llm_prompt")) {
             FlexConfig.setLlmPrompt(global.get("translation_llm_prompt").getAsString());

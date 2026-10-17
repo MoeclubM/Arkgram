@@ -238,14 +238,6 @@ public class FlexConfig {
         prefs().edit().putBoolean("flex_disable_markdown", value).apply();
     }
 
-    public static boolean isNewMarkdownParserEnabled() {
-        return prefs().getBoolean("flex_new_markdown_parser", true);
-    }
-
-    public static void setNewMarkdownParserEnabled(boolean value) {
-        prefs().edit().putBoolean("flex_new_markdown_parser", value).apply();
-    }
-
     public static boolean isMarkdownParseLinksEnabled() {
         return prefs().getBoolean("flex_markdown_parse_links", true);
     }
@@ -262,12 +254,20 @@ public class FlexConfig {
         prefs().edit().putBoolean("flex_ad_block_enabled", value).apply();
     }
 
+    public static boolean isSponsoredAdBlockEnabled() {
+        return prefs().getBoolean("flex_block_sponsored_ads", true);
+    }
+
+    public static void setSponsoredAdBlockEnabled(boolean value) {
+        prefs().edit().putBoolean("flex_block_sponsored_ads", value).apply();
+    }
+
     public static String getAdBlockKeywordsText() {
         return joinLineList(splitLineList(prefs().getString("flex_ad_block_keywords", "")));
     }
 
     public static ArrayList<String> getAdBlockKeywords() {
-        return splitLineList(getAdBlockKeywordsText());
+        return splitLineList(prefs().getString("flex_ad_block_keywords", ""));
     }
 
     public static void setAdBlockKeywordsText(String value) {
@@ -395,6 +395,7 @@ public class FlexConfig {
         if (!isAdBlockEnabled() || !messageObject.isSponsored()) {
             return false;
         }
+        if (isSponsoredAdBlockEnabled()) return true;
         String sponsoredId = Base64.encodeToString(messageObject.sponsoredId, Base64.NO_WRAP);
         if (prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>()).contains(sponsoredId)) {
             return true;
@@ -419,9 +420,6 @@ public class FlexConfig {
             long savedFromPeerId = MessageObject.getPeerId(fwdFrom.saved_from_peer);
             if (savedFromPeerId != 0 && fwdFrom.saved_from_msg_id > 0) {
                 keys.add(savedFromPeerId + ":" + fwdFrom.saved_from_msg_id);
-            }
-            if (savedFromPeerId != 0 && fwdFrom.channel_post > 0) {
-                keys.add(savedFromPeerId + ":" + fwdFrom.channel_post);
             }
         }
         return new ArrayList<>(keys);
@@ -572,6 +570,26 @@ public class FlexConfig {
         prefs().edit().putString("flex_ai_summary_llm_model_ref", clean(value)).apply();
     }
 
+    public static String getOfficialAiModelRef() {
+        return clean(prefs().getString("flex_official_ai_model_ref", ""));
+    }
+
+    public static void setOfficialAiModelRef(String value) {
+        prefs().edit().putString("flex_official_ai_model_ref", clean(value)).apply();
+    }
+
+    public static boolean usesExternalOfficialAi() {
+        return !getOfficialAiModelRef().isEmpty();
+    }
+
+    public static String getOfficialAiPrompt() {
+        return clean(prefs().getString("flex_official_ai_prompt", ""));
+    }
+
+    public static void setOfficialAiPrompt(String value) {
+        prefs().edit().putString("flex_official_ai_prompt", clean(value)).apply();
+    }
+
     public static String getStoredProviderApiUrl(int provider) {
         return clean(prefs().getString(llmProviderKey(provider, "api_url"), ""));
     }
@@ -594,7 +612,17 @@ public class FlexConfig {
     }
 
     public static String getProviderApiUrl(int provider) {
-        return resolveLlmApiUrl(provider, getProviderApiType(provider), getStoredProviderApiUrl(provider));
+        int apiType = getProviderApiType(provider);
+        String value = resolveLlmApiUrl(provider, apiType, getStoredProviderApiUrl(provider));
+        if (value.isEmpty()) return value;
+        android.net.Uri uri = android.net.Uri.parse(value);
+        String path = uri.getPath();
+        if (TextUtils.isEmpty(path) || "/".equals(path) || path.endsWith("/v1") || path.endsWith("/v1/")) {
+            String base = TextUtils.isEmpty(path) || "/".equals(path) ? "/v1" : path.replaceAll("/$", "");
+            String endpoint = apiType == LLM_API_TYPE_RESPONSES ? "/responses" : apiType == LLM_API_TYPE_CLAUDE_MESSAGES ? "/messages" : "/chat/completions";
+            return uri.buildUpon().path(base + endpoint).build().toString();
+        }
+        return value;
     }
 
     public static void setProviderApiUrl(int provider, String value) {

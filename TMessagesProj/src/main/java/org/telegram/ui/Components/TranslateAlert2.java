@@ -41,7 +41,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.common.base.Charsets;
 //import com.google.mlkit.common.model.RemoteModelManager;
 //import com.google.mlkit.nl.translate.TranslateLanguage;
 //import com.google.mlkit.nl.translate.TranslateRemoteModel;
@@ -49,15 +48,10 @@ import com.google.common.base.Charsets;
 //import com.google.mlkit.nl.translate.Translator;
 //import com.google.mlkit.nl.translate.TranslatorOptions;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlexConfig;
-import org.telegram.messenger.FlexLlmHelper;
 import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -79,14 +73,6 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextSelectionHelper;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -320,25 +306,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             reqId = null;
         }
 
-        String method = MessagesController.getInstance(currentAccount).translationsManualEnabled;
-        if (!FlexConfig.isTelegramTranslatePreferred()) {
-            method = "alternative";
-        }
-        if ("alternative".equalsIgnoreCase(method)) {
-            translateAlt();
-            return;
-        }/* else if ("system".equalsIgnoreCase(method)) {
-            translateSystem();
-            return;
-        }*/
-
-        String lang = toLanguage;
-        if (lang != null) {
-            lang = lang.split("_")[0];
-        }
-        if ("nb".equals(lang)) {
-            lang = "no";
-        }
+        String lang = normalizeLanguage(toLanguage);
 
         if (reqRichMessage != null && reqPeer != null) {
             TLRPC.TL_messages_translateRichMessage req = new TLRPC.TL_messages_translateRichMessage();
@@ -361,9 +329,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                         }
                     } else if (firstTranslation) {
                         dismiss();
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, (err != null ? err.text : LocaleController.getString(R.string.TranslationFailedAlert2)));
                     } else {
-                        BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(R.string.TranslationFailedAlert2)).show();
+                        BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin((err != null ? err.text : LocaleController.getString(R.string.TranslationFailedAlert2))).show();
                         headerView.toLanguageTextView.setText(languageName(toLanguage = prevToLanguage));
                     }
                 });
@@ -385,9 +353,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             req.to_lang = normalizeLanguage(lang);
             reqId = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
                 reqId = null;
-                if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
-                    translateAlt();
-                } else if (res != null) {
+                if (res != null) {
                     firstTranslation = false;
                     TLRPC.TL_textWithEntities text = preprocess(textWithEntities, res);
                     CharSequence translated = SpannableStringBuilder.valueOf(text.text);
@@ -397,9 +363,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     adapter.updateMainView(textViewContainer);
                 } else if (firstTranslation) {
                     dismiss();
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, (err != null ? err.text : LocaleController.getString(R.string.TranslationFailedAlert2)));
                 } else {
-                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(R.string.TranslationFailedAlert2)).show();
+                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin((err != null ? err.text : LocaleController.getString(R.string.TranslationFailedAlert2))).show();
                     headerView.toLanguageTextView.setText(languageName(toLanguage = prevToLanguage));
                     adapter.updateMainView(textViewContainer);
                 }
@@ -408,7 +374,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
 
         TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
-        if (reqPeer != null) {
+        if (reqPeer != null && !FlexConfig.usesExternalTranslationProvider()) {
             req.flags |= 1;
             req.peer = reqPeer;
             req.id.add(reqMessageId);
@@ -424,9 +390,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
             AndroidUtilities.runOnUIThread(() -> {
                 reqId = null;
-                if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
-                    translateAlt();
-                } else if (res instanceof TLRPC.TL_messages_translateResult &&
+                if (res instanceof TLRPC.TL_messages_translateResult &&
                     !((TLRPC.TL_messages_translateResult) res).result.isEmpty() &&
                     ((TLRPC.TL_messages_translateResult) res).result.get(0) != null &&
                     ((TLRPC.TL_messages_translateResult) res).result.get(0).text != null
@@ -440,412 +404,14 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     adapter.updateMainView(textViewContainer);
                 } else if (firstTranslation) {
                     dismiss();
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, err != null ? err.text : LocaleController.getString(R.string.TranslationFailedAlert2));
                 } else {
-                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(R.string.TranslationFailedAlert2)).show();
+                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(err != null ? err.text : LocaleController.getString(R.string.TranslationFailedAlert2)).show();
                     headerView.toLanguageTextView.setText(languageName(toLanguage = prevToLanguage));
                     adapter.updateMainView(textViewContainer);
                 }
             });
         });
-    }
-
-    public static final String[] userAgents = new String[] {
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:95.0) Gecko/20100101 Firefox/95.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"
-    };
-    private void translateAlt() {
-        final String text = reqText == null ? "" : reqText.toString();
-        String _fromLng = fromLanguage;
-        if (_fromLng != null) {
-            _fromLng = _fromLng.split("_")[0];
-        }
-        if ("nb".equals(_fromLng)) {
-            _fromLng = "no";
-        }
-        final String fromLng = _fromLng;
-        String _toLng = toLanguage;
-        if (_toLng != null) {
-            _toLng = _toLng.split("_")[0];
-        }
-        if ("nb".equals(_toLng)) {
-            _toLng = "no";
-        }
-        final String toLng = _toLng;
-
-        alternativeTranslate(text, fromLng, toLng, (res, rateLimit, error) -> {
-            if (res != null) {
-                firstTranslation = false;
-                textView.setText(preprocessText(res));
-                adapter.updateMainView(textViewContainer);
-            } else {
-                if (isDismissed()) return;
-                final String errorText = error != null ? error : LocaleController.getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2);
-//                if ("system".equals(MessagesController.getInstance(currentAccount).translationsManualEnabled)) {
-//                    translateSystem();
-//                    return;
-//                }
-                if (firstTranslation) {
-                    dismiss();
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, errorText);
-                } else {
-                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(errorText).show();
-                    headerView.toLanguageTextView.setText(languageName(toLanguage = prevToLanguage));
-                    adapter.updateMainView(textViewContainer);
-                }
-            }
-        });
-    }
-
-    private static int lastIndexOfSafe(String text, String target, int start, int end) {
-        int idx = text.lastIndexOf(target, end - 1);
-        return (idx >= start) ? idx : -1;
-    }
-
-    public static ArrayList<String> cut(String text, int maxLength) {
-        ArrayList<String> result = new ArrayList<>();
-        StringBuilder part = new StringBuilder();
-        int encodedLength = 0;
-        int lastBreak = -1;
-        for (int i = 0; i < text.length(); ) {
-            final int codePoint = text.codePointAt(i);
-            final int next = i + Character.charCount(codePoint);
-            String piece = text.substring(i, next);
-            int pieceLength = Uri.encode(piece).length();
-            if (encodedLength + pieceLength > maxLength && part.length() > 0) {
-                if (lastBreak > 0) {
-                    result.add(Uri.encode(part.substring(0, lastBreak)));
-                    part.delete(0, lastBreak);
-                    encodedLength = Uri.encode(part.toString()).length();
-                } else {
-                    result.add(Uri.encode(part.toString()));
-                    part.setLength(0);
-                    encodedLength = 0;
-                }
-                lastBreak = lastIndexOfSafe(part.toString(), "\n", 0, part.length());
-                if (lastBreak == -1) {
-                    lastBreak = lastIndexOfSafe(part.toString(), " ", 0, part.length());
-                }
-                if (lastBreak >= 0) {
-                    lastBreak += 1;
-                }
-                continue;
-            }
-            part.append(piece);
-            encodedLength += pieceLength;
-            if (codePoint == '\n' || codePoint == ' ') {
-                lastBreak = part.length();
-            }
-            i = next;
-        }
-        if (part.length() > 0) {
-            result.add(Uri.encode(part.toString()));
-        }
-        return result;
-    }
-
-    public static void alternativeTranslate(String text, String fromLng, String toLng, Utilities.Callback3<String, Boolean, String> done) {
-        if (done == null) return;
-        int provider = FlexConfig.getTranslationProvider();
-        if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
-            AndroidUtilities.runOnUIThread(() -> done.run(null, false, LocaleController.getString(R.string.TranslationFailedAlert2)));
-            return;
-        }
-        if ((provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE || provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN) && fromLng == null) {
-            LanguageDetector.detectLanguage(text, lng -> {
-                alternativeTranslate(text, lng, toLng, done);
-            }, e -> {
-                String message = e != null ? e.getMessage() : null;
-                AndroidUtilities.runOnUIThread(() -> done.run(null, false, TextUtils.isEmpty(message) ? LocaleController.getString(R.string.TranslationFailedAlert2) : message));
-            });
-            return;
-        }
-        if (provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE || provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN) {
-            final String etext = Uri.encode(text);
-            if (etext.length() > 5000) {
-                ArrayList<String> parts = cut(text, 5000);
-                ArrayList<String> results = new ArrayList<>();
-                for (int i = 0; i < parts.size(); ++i) {
-                    results.add(null);
-                }
-
-                final boolean[] fullyDone = new boolean[1];
-                for (int i = 0; i < parts.size(); ++i) {
-                    final int index = i;
-                    alternativeTranslateInternal(parts.get(i), fromLng, toLng, (res, rateLimit, error) -> {
-                        if (fullyDone[0]) return;
-                        if (res != null) {
-                            results.set(index, res);
-                            boolean allDone = true;
-                            for (int j = 0; j < results.size(); ++j) {
-                                if (results.get(j) == null) {
-                                    allDone = false;
-                                    break;
-                                }
-                            }
-                            if (allDone) {
-                                fullyDone[0] = true;
-                                done.run(TextUtils.join("", results), false, null);
-                            }
-                        } else {
-                            fullyDone[0] = true;
-                            done.run(null, rateLimit, error);
-                        }
-                    });
-                }
-                return;
-            }
-            alternativeTranslateInternal(etext, fromLng, toLng, done);
-            return;
-        }
-        alternativeTranslateInternal(text, fromLng, toLng, done);
-    }
-
-    private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
-        if (connection == null) {
-            return null;
-        }
-        InputStream stream = errorStream ? connection.getErrorStream() : connection.getInputStream();
-        if (stream == null) {
-            return null;
-        }
-        Reader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(stream, Charsets.UTF_8));
-            StringBuilder builder = new StringBuilder();
-            int c;
-            while ((c = reader.read()) != -1) {
-                builder.append((char) c);
-            }
-            return builder.toString();
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
-    }
-
-    private static String getProviderErrorMessage(int provider, HttpURLConnection connection, String responseText) {
-        try {
-            if (!TextUtils.isEmpty(responseText)) {
-                JSONObject object = new JSONObject(responseText);
-                if (provider == FlexConfig.TRANSLATION_PROVIDER_DEEPL) {
-                    String message = object.optString("message", null);
-                    if (!TextUtils.isEmpty(message)) {
-                        return message;
-                    }
-                } else if (provider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
-                    JSONObject error = object.optJSONObject("error");
-                    if (error != null) {
-                        String message = error.optString("message", null);
-                        if (!TextUtils.isEmpty(message)) {
-                            return message;
-                        }
-                    }
-                    String message = object.optString("message", null);
-                    if (!TextUtils.isEmpty(message)) {
-                        return message;
-                    }
-                }
-            }
-        } catch (Exception ignore) {
-        }
-        try {
-            int responseCode = connection != null ? connection.getResponseCode() : 0;
-            if (responseCode >= 400) {
-                return LocaleController.getString(R.string.FlexTranslationRequestFailed) + " (" + responseCode + ")";
-            }
-        } catch (Exception ignore) {
-        }
-        return null;
-    }
-
-    private static String getDeepLLanguage(String language, boolean target) {
-        if (TextUtils.isEmpty(language)) {
-            return null;
-        }
-        String normalized = language.toLowerCase(Locale.US).replace('_', '-');
-        if (TranslateController.UNKNOWN_LANGUAGE.equals(normalized)) {
-            return null;
-        }
-        if ("nb".equals(normalized)) {
-            normalized = "no";
-        }
-        if ("zh-hant".equals(normalized) || "zh-tw".equals(normalized) || "zh-hk".equals(normalized) || "zh-mo".equals(normalized)) {
-            return "ZH-HANT";
-        }
-        if ("zh".equals(normalized) || "zh-hans".equals(normalized) || "zh-cn".equals(normalized) || "zh-sg".equals(normalized)) {
-            return "ZH-HANS";
-        }
-        if ("es-419".equals(normalized)) {
-            return target ? "ES-419" : "ES";
-        }
-        if ("pt-br".equals(normalized)) {
-            return target ? "PT-BR" : "PT";
-        }
-        if ("pt".equals(normalized) || "pt-pt".equals(normalized)) {
-            return target ? "PT-PT" : "PT";
-        }
-        if ("en-gb".equals(normalized)) {
-            return target ? "EN-GB" : "EN";
-        }
-        if ("en".equals(normalized) || "en-us".equals(normalized)) {
-            return target ? "EN-US" : "EN";
-        }
-        if ("no".equals(normalized)) {
-            return "NB";
-        }
-        int divider = normalized.indexOf('-');
-        if (divider >= 0) {
-            normalized = normalized.substring(0, divider);
-        }
-        return normalized.toUpperCase(Locale.US);
-    }
-
-    private static String getLanguageDisplayName(String language) {
-        if (TextUtils.isEmpty(language)) {
-            return "";
-        }
-        String name = languageName(language);
-        return TextUtils.isEmpty(name) ? language : name;
-    }
-
-    private static void alternativeTranslateInternal(String text, String fromLng, String toLng, Utilities.Callback3<String, Boolean, String> done) {
-        if (done == null) return;
-        int provider = FlexConfig.getTranslationProvider();
-        if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
-            AndroidUtilities.runOnUIThread(() -> done.run(null, false, LocaleController.getString(R.string.TranslationFailedAlert2)));
-            return;
-        }
-        final int finalProvider = provider;
-        new Thread() {
-            @Override
-            public void run() {
-                HttpURLConnection connection = null;
-                String responseText = null;
-                try {
-                    if (finalProvider == FlexConfig.TRANSLATION_PROVIDER_DEEPL) {
-                        String apiKey = FlexConfig.getDeepLApiKey();
-                        if (TextUtils.isEmpty(apiKey)) {
-                            AndroidUtilities.runOnUIThread(() -> done.run(null, false, LocaleController.getString(R.string.FlexTranslationDeepLApiKeyMissing)));
-                            return;
-                        }
-                        String apiUrl = FlexConfig.getDeepLApiUrl();
-                        String targetLanguage = getDeepLLanguage(toLng, true);
-                        String sourceLanguage = getDeepLLanguage(fromLng, false);
-                        connection = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
-                        connection.setConnectTimeout(15000);
-                        connection.setReadTimeout(30000);
-                        connection.setRequestMethod("POST");
-                        connection.setDoOutput(true);
-                        connection.setRequestProperty("Authorization", "DeepL-Auth-Key " + apiKey);
-                        connection.setRequestProperty("User-Agent", userAgents[(int) Math.round(Math.random() * (userAgents.length - 1))]);
-                        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-
-                        String body = "text=" + Uri.encode(text) + "&target_lang=" + Uri.encode(targetLanguage) + "&preserve_formatting=1";
-                        if (!TextUtils.isEmpty(sourceLanguage)) {
-                            body += "&source_lang=" + Uri.encode(sourceLanguage);
-                        }
-                        try (OutputStream outputStream = connection.getOutputStream()) {
-                            outputStream.write(body.getBytes(Charsets.UTF_8));
-                        }
-
-                        responseText = readConnectionText(connection, false);
-                        JSONArray translations = new JSONObject(responseText).optJSONArray("translations");
-                        if (translations == null || translations.length() <= 0) {
-                            throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
-                        }
-                        String result = translations.optJSONObject(0) != null ? translations.optJSONObject(0).optString("text", null) : null;
-                        if (TextUtils.isEmpty(result)) {
-                            throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
-                        }
-                        AndroidUtilities.runOnUIThread(() -> done.run(result, false, null));
-                        return;
-                    }
-                    if (finalProvider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
-                        String apiUrl = FlexConfig.getLlmApiUrl();
-                        String model = FlexConfig.getLlmModel();
-                        StringBuilder prompt = new StringBuilder();
-                        if (!TextUtils.isEmpty(fromLng) && !TranslateController.UNKNOWN_LANGUAGE.equals(fromLng)) {
-                            prompt.append("Source language: ").append(getLanguageDisplayName(fromLng)).append('\n');
-                        }
-                        prompt.append("Target language: ").append(getLanguageDisplayName(toLng)).append('\n');
-                        prompt.append("Text:\n").append(text);
-                        FlexLlmHelper.requestText(FlexConfig.getLlmApiType(), apiUrl, FlexConfig.getLlmApiKey(), model, FlexConfig.getLlmPrompt(), prompt.toString(), 0, (result, error) -> {
-                            if (error != null || result == null) {
-                                done.run(result, false, error);
-                                return;
-                            }
-                            done.run(result, false, null);
-                        });
-                        return;
-                    }
-
-                    String sourceLanguage = TextUtils.isEmpty(fromLng) || TranslateController.UNKNOWN_LANGUAGE.equals(fromLng) ? "auto" : fromLng;
-                    String uri = "https://";
-                    uri += finalProvider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN ? "translate.google.cn" : "translate.googleapis.com";
-                    uri += "/translate_a/single?client=gtx&sl=" + Uri.encode(sourceLanguage) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
-                    uri += text;
-                    connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
-                    connection.setConnectTimeout(15000);
-                    connection.setReadTimeout(30000);
-                    connection.setRequestMethod("GET");
-                    connection.setRequestProperty("User-Agent", userAgents[(int) Math.round(Math.random() * (userAgents.length - 1))]);
-                    connection.setRequestProperty("Content-Type", "application/json");
-
-                    responseText = readConnectionText(connection, false);
-                    JSONTokener tokener = new JSONTokener(responseText);
-                    JSONArray array = new JSONArray(tokener);
-                    JSONArray array1 = array.getJSONArray(0);
-                    String result = "";
-                    for (int i = 0; i < array1.length(); ++i) {
-                        String blockText = array1.getJSONArray(i).getString(0);
-                        if (blockText != null && !blockText.equals("null"))
-                            result += /*(i > 0 ? "\n" : "") +*/ blockText;
-                    }
-                    if (text.length() > 0 && text.charAt(0) == '\n')
-                        result = "\n" + result;
-                    final String finalResult = result;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (done != null)
-                            done.run(finalResult, false, null);
-                    });
-                } catch (Exception e) {
-                    try {
-                        String errorResponseText = readConnectionText(connection, true);
-                        if (!TextUtils.isEmpty(errorResponseText)) {
-                            responseText = errorResponseText;
-                        }
-                    } catch (Exception readError) {
-                        FileLog.e(readError);
-                    }
-                    String errorMessage = getProviderErrorMessage(finalProvider, connection, responseText);
-                    if (TextUtils.isEmpty(errorMessage)) {
-                        errorMessage = e instanceof JSONException ? LocaleController.getString(R.string.FlexTranslationInvalidResponse) : e.getMessage();
-                    }
-                    if (TextUtils.isEmpty(errorMessage)) {
-                        errorMessage = LocaleController.getString(R.string.FlexTranslationRequestFailed);
-                    }
-                    FileLog.e(e);
-                    try {
-                        final boolean rateLimit = connection != null && connection.getResponseCode() == 429;
-                        final String finalErrorMessage = errorMessage;
-                        AndroidUtilities.runOnUIThread(() -> {
-                            done.run(null, rateLimit, finalErrorMessage);
-                        });
-                    } catch (Exception e2) {
-                        final String finalErrorMessage = errorMessage;
-                        AndroidUtilities.runOnUIThread(() -> {
-                            done.run(null, false, finalErrorMessage);
-                        });
-                    }
-                }
-            }
-        }.start();
     }
 
 //    private ArrayList<Runnable> cancelTrackingDownloads = new ArrayList<>();
@@ -857,7 +423,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 //        final String text = reqText == null ? "" : reqText.toString();
 //        String _fromLng = fromLanguage;
 //        if (_fromLng != null) {
-//            _fromLng = _fromLng.split("_")[0];
+//            _fromLng = TranslateController.normalizeLanguage(_fromLng);
 //        }
 //        if ("nb".equals(_fromLng)) {
 //            _fromLng = "no";
@@ -865,7 +431,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 //        final String fromLng = TranslateLanguage.fromLanguageTag(_fromLng);
 //        String _toLng = toLanguage;
 //        if (_toLng != null) {
-//            _toLng = _toLng.split("_")[0];
+//            _toLng = TranslateController.normalizeLanguage(_toLng);
 //        }
 //        if ("nb".equals(_toLng)) {
 //            _toLng = "no";

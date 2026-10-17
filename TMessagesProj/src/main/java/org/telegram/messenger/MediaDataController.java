@@ -7361,12 +7361,15 @@ public class MediaDataController extends BaseController {
     }
 
     public ArrayList<TLRPC.MessageEntity> getEntities(CharSequence[] message, boolean allowStrike) {
-        return getEntities(message, allowStrike, true);
+        return getEntities(message, allowStrike, !FlexConfig.isMarkdownDisabled());
     }
 
     public ArrayList<TLRPC.MessageEntity> getEntities(CharSequence[] message, boolean allowStrike, boolean parseMarkdown) {
         if (message == null || message[0] == null) {
             return null;
+        }
+        if (parseMarkdown && FlexConfig.isMarkdownParseLinksEnabled()) {
+            FlexEntitiesHelper.parseLinks(message, this, allowStrike);
         }
         ArrayList<TLRPC.MessageEntity> entities = null;
         int index;
@@ -7375,8 +7378,7 @@ public class MediaDataController extends BaseController {
         boolean isPre = false;
         final String mono = "`";
         final String pre = "```";
-        final boolean parseLegacyMarkdown = parseMarkdown && !(FlexConfig.isNewMarkdownParserEnabled() || FlexConfig.isMarkdownDisabled());
-        while (parseLegacyMarkdown && (index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
+        while (parseMarkdown && (index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
             if (start == -1) {
                 isPre = message[0].length() - index > 2 && message[0].charAt(index + 1) == '`' && message[0].charAt(index + 2) == '`';
                 start = index;
@@ -7460,10 +7462,6 @@ public class MediaDataController extends BaseController {
             entity.offset = start;
             entity.length = 1;
             entities.add(entity);
-        }
-
-        if (parseMarkdown && !FlexConfig.isMarkdownDisabled() && FlexConfig.isNewMarkdownParserEnabled()) {
-            FlexEntitiesHelper.parseMarkdown(message, allowStrike);
         }
 
         if (message[0] instanceof Spanned) {
@@ -7656,7 +7654,7 @@ public class MediaDataController extends BaseController {
 
         CharSequence cs = message[0];
         if (entities == null) entities = new ArrayList<>();
-        if (parseLegacyMarkdown) {
+        if (parseMarkdown) {
             cs = parsePattern(cs, BOLD_PATTERN, entities, obj -> new TLRPC.TL_messageEntityBold());
             cs = parsePattern(cs, ITALIC_PATTERN, entities, obj -> new TLRPC.TL_messageEntityItalic());
             cs = parsePattern(cs, SPOILER_PATTERN, entities, obj -> new TLRPC.TL_messageEntitySpoiler());

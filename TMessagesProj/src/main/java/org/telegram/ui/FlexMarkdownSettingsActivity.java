@@ -15,7 +15,6 @@ import java.util.ArrayList;
 public class FlexMarkdownSettingsActivity extends UniversalFragment {
 
     private static final int ID_DISABLE_MARKDOWN = 1;
-    private static final int ID_NEW_MARKDOWN_PARSER = 2;
     private static final int ID_PARSE_LINKS = 3;
 
     @Override
@@ -27,7 +26,6 @@ public class FlexMarkdownSettingsActivity extends UniversalFragment {
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.FlexMarkdownSettings)));
         items.add(UItem.asCheck(ID_DISABLE_MARKDOWN, getString(R.string.FlexDisableMarkdown)).setChecked(FlexConfig.isMarkdownDisabled()));
-        items.add(UItem.asCheck(ID_NEW_MARKDOWN_PARSER, getString(R.string.FlexNewMarkdownParser)).setChecked(FlexConfig.isNewMarkdownParserEnabled()));
         items.add(UItem.asCheck(ID_PARSE_LINKS, getString(R.string.FlexMarkdownParseLinks)).setChecked(FlexConfig.isMarkdownParseLinksEnabled()));
         items.add(UItem.asShadow(getString(R.string.FlexMarkdownInfo)));
     }
@@ -36,9 +34,6 @@ public class FlexMarkdownSettingsActivity extends UniversalFragment {
     protected void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == ID_DISABLE_MARKDOWN) {
             FlexConfig.setMarkdownDisabled(!FlexConfig.isMarkdownDisabled());
-            listView.adapter.update(true);
-        } else if (item.id == ID_NEW_MARKDOWN_PARSER) {
-            FlexConfig.setNewMarkdownParserEnabled(!FlexConfig.isNewMarkdownParserEnabled());
             listView.adapter.update(true);
         } else if (item.id == ID_PARSE_LINKS) {
             FlexConfig.setMarkdownParseLinksEnabled(!FlexConfig.isMarkdownParseLinksEnabled());

@@ -235,6 +235,7 @@ public class TL_iv {
     }
     public static class TL_inputRichMessage extends TLObject {
         public static final int constructor = 0xe4c449fc;
+        public RichMessage localSource; // Local editing context, never serialized.
 
         public int flags;
         public boolean rtl;

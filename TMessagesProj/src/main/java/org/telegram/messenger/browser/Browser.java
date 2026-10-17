@@ -391,7 +391,7 @@ public class Browser {
                     .appendQueryParameter("autologin_token", autologin_token)
                     .build();
             }
-            if (allowCustom && !(uri != null && MessagesController.getInstance(currentAccount).isWebBrowserOpenInApp(uri.toString()) || isInstantViewOpen()) && MessagesController.getInstance(currentAccount).isWebBrowserUseCustomTabs() && !internalUri && !scheme.equals("tel") && !isTonsite(uri.toString())) {
+            if (allowCustom && !(forceInAppBrowser || uri != null && MessagesController.getInstance(currentAccount).isWebBrowserOpenInApp(uri.toString()) || isInstantViewOpen()) && MessagesController.getInstance(currentAccount).isWebBrowserUseCustomTabs() && !internalUri && !scheme.equals("tel") && !isTonsite(uri.toString())) {
                 if (forceBrowser[0] || !openInExternalApp(context, uri.toString(), false) || !hasAppToOpen(context, uri.toString())) {
                     if (MessagesController.getInstance(currentAccount).authDomains.contains(host)) {
                         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -427,7 +427,7 @@ public class Browser {
 
             final boolean inappBrowser = (
                 allowInAppBrowser && BubbleActivity.instance == null &&
-                (uri != null && MessagesController.getInstance(currentAccount).isWebBrowserOpenInApp(uri.toString()) || isInstantViewOpen()) &&
+                (forceInAppBrowser || uri != null && MessagesController.getInstance(currentAccount).isWebBrowserOpenInApp(uri.toString()) || isInstantViewOpen()) &&
                 TextUtils.isEmpty(browserPackage) &&
                 (uri.getScheme() == null || "https".equals(uri.getScheme()) || "http".equals(uri.getScheme()) || "tonsite".equals(uri.getScheme()))
                 ||

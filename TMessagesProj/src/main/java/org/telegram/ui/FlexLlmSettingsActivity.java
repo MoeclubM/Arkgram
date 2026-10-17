@@ -18,6 +18,7 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
 
     private static final int ID_TRANSLATION = 1;
     private static final int ID_AI_SUMMARY = 2;
+    private static final int ID_OFFICIAL_AI = 3;
     private static final int ID_PROVIDER_BASE = 100;
 
     @Override
@@ -35,6 +36,8 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
         items.add(UItem.asHeader(getString(R.string.FlexLlmFeatures)));
         items.add(UItem.asButton(ID_TRANSLATION, R.drawable.msg_translate, getString(R.string.FlexTranslationLlmSettings), getFeatureValue(false)));
         items.add(UItem.asButton(ID_AI_SUMMARY, R.drawable.outline_ai_translate2, getString(R.string.FlexAiSummarySettings), getFeatureValue(true)));
+        String ref = FlexConfig.getOfficialAiModelRef();
+        items.add(UItem.asButton(ID_OFFICIAL_AI, R.drawable.outline_ai_translate2, getString(R.string.FlexOfficialAi), ref.isEmpty() ? getString(R.string.FlexTranslationProviderTelegram) : FlexLlmFeatureSettingsActivity.getProviderApiTitle(FlexConfig.getLlmProviderFromRef(ref)) + " / " + FlexConfig.getLlmModelFromRef(ref)));
         items.add(UItem.asShadow(null));
     }
 
@@ -44,6 +47,8 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
             presentFragment(new FlexLlmFeatureSettingsActivity(false));
         } else if (item.id == ID_AI_SUMMARY) {
             presentFragment(new FlexLlmFeatureSettingsActivity(true));
+        } else if (item.id == ID_OFFICIAL_AI) {
+            presentFragment(new FlexLlmFeatureSettingsActivity(FlexLlmFeatureSettingsActivity.OFFICIAL_AI));
         } else if (item.id >= ID_PROVIDER_BASE) {
             presentFragment(new FlexLlmProviderSettingsActivity(item.id - ID_PROVIDER_BASE));
         }

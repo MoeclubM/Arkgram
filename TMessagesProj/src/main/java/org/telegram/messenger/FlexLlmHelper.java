@@ -18,33 +18,35 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class FlexLlmHelper {
 
     private static final int CLAUDE_MAX_TOKENS = 4096;
     private static final String CLAUDE_API_VERSION = "2023-06-01";
 
-    public static void requestText(String apiUrl, String apiKey, String model, String systemPrompt, String userPrompt, double temperature, Utilities.Callback2<String, String> done) {
-        requestText(FlexConfig.LLM_API_TYPE_CHAT_COMPLETIONS, apiUrl, apiKey, model, systemPrompt, userPrompt, temperature, done);
-    }
-
-    public static void requestText(int apiType, String apiUrl, String apiKey, String model, String systemPrompt, String userPrompt, double temperature, Utilities.Callback2<String, String> done) {
+    public static Runnable requestText(int apiType, String apiUrl, String apiKey, String model, String systemPrompt, String userPrompt, Utilities.Callback2<String, String> done) {
         if (done == null) {
-            return;
-        }
-        if (TextUtils.isEmpty(apiUrl)) {
-            AndroidUtilities.runOnUIThread(() -> done.run(null, LocaleController.getString(R.string.FlexLlmApiUrlMissing)));
-            return;
+            return null;
         }
         if (TextUtils.isEmpty(model)) {
             AndroidUtilities.runOnUIThread(() -> done.run(null, LocaleController.getString(R.string.FlexLlmModelMissing)));
-            return;
+            return null;
         }
-        new Thread(() -> {
+        if (TextUtils.isEmpty(apiUrl)) {
+            AndroidUtilities.runOnUIThread(() -> done.run(null, LocaleController.getString(R.string.FlexLlmApiUrlMissing)));
+            return null;
+        }
+        AtomicBoolean cancelled = new AtomicBoolean();
+        AtomicReference<HttpURLConnection> activeConnection = new AtomicReference<>();
+        Thread worker = new Thread(() -> {
             HttpURLConnection connection = null;
             String responseText = null;
             try {
                 connection = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
+                activeConnection.set(connection);
+                if (cancelled.get()) return;
                 connection.setConnectTimeout(15000);
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
@@ -53,7 +55,6 @@ public class FlexLlmHelper {
 
                 JSONObject request = new JSONObject();
                 request.put("model", model);
-                request.put("temperature", temperature);
                 if (apiType == FlexConfig.LLM_API_TYPE_RESPONSES) {
                     if (!TextUtils.isEmpty(systemPrompt)) {
                         request.put("instructions", systemPrompt);
@@ -114,7 +115,9 @@ public class FlexLlmHelper {
                     throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
                 }
                 String finalResult = result.trim();
-                AndroidUtilities.runOnUIThread(() -> done.run(finalResult, null));
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!cancelled.get()) done.run(finalResult, null);
+                });
             } catch (Exception e) {
                 try {
                     String errorResponseText = readConnectionText(connection, true);
@@ -127,13 +130,22 @@ public class FlexLlmHelper {
                 String errorMessage = getErrorMessage(connection, responseText, e);
                 FileLog.e(e);
                 String finalErrorMessage = errorMessage;
-                AndroidUtilities.runOnUIThread(() -> done.run(null, finalErrorMessage));
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!cancelled.get()) done.run(null, finalErrorMessage);
+                });
             } finally {
                 if (connection != null) {
                     connection.disconnect();
                 }
             }
-        }, "FlexLlmRequest").start();
+        }, "FlexLlmRequest");
+        worker.start();
+        return () -> {
+            cancelled.set(true);
+            worker.interrupt();
+            HttpURLConnection connection = activeConnection.get();
+            if (connection != null) connection.disconnect();
+        };
     }
 
     public static void requestModels(String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
@@ -334,6 +346,8 @@ public class FlexLlmHelper {
         if (message == null) {
             return null;
         }
+        String refusal = message.optString("refusal", "");
+        if (!TextUtils.isEmpty(refusal)) throw new IllegalStateException(refusal);
         Object content = message.opt("content");
         if (content instanceof String) {
             return ((String) content).trim();
@@ -378,6 +392,7 @@ public class FlexLlmHelper {
                 continue;
             }
             JSONObject object = (JSONObject) block;
+            if ("refusal".equals(object.optString("type"))) throw new IllegalStateException(object.optString("refusal"));
             Object text = object.opt("text");
             if (text instanceof String) {
                 builder.append((String) text);

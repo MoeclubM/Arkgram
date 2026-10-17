@@ -127,7 +127,7 @@ public class TranslateController extends BaseController {
         return (
             messageObject != null &&
             messageObject.messageOwner != null &&
-            messageObject.messageOwner.summary_from_language != null &&
+            (FlexConfig.usesExternalOfficialAi() || messageObject.messageOwner.summary_from_language != null) &&
             !messageObject.isOutOwner() &&
             !messageObject.isRestrictedMessage &&
             !messageObject.isSponsored() &&
@@ -1107,29 +1107,6 @@ public class TranslateController extends BaseController {
         int reqId = -1;
     }
 
-    private void translatePendingExternal(boolean isTranscription, PendingTranslation pendingTranslation) {
-        final String toLanguage = pendingTranslation.language;
-        final Set<Integer> loadingTranslations = isTranscription ? loadingTranscriptionTranslations : this.loadingTranslations;
-        for (int i = 0; i < pendingTranslation.messageIds.size(); ++i) {
-            final int id = pendingTranslation.messageIds.get(i);
-            final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> callback = pendingTranslation.callbacks.get(i);
-            final String text = pendingTranslation.messageTexts.get(i).text;
-            TranslateAlert2.alternativeTranslate(text, null, toLanguage, (result, rateLimit, error) -> {
-                synchronized (TranslateController.this) {
-                    loadingTranslations.remove(id);
-                }
-                if (result != null) {
-                    final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
-                    resultWithEntities.text = result;
-                    callback.run(isTranscription, id, resultWithEntities, toLanguage);
-                } else {
-                    callback.run(isTranscription, id, null, toLanguage);
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, error != null ? error : getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
-                }
-            });
-        }
-    }
-
     private void pushToTranslate(
         MessageObject message,
         String language,
@@ -1211,35 +1188,8 @@ public class TranslateController extends BaseController {
                     }
                 }
 
-                String method = getMessagesController().translationsAutoEnabled;
-                if (!FlexConfig.isTelegramTranslatePreferred()) {
-                    method = "alternative";
-                }
-                if ("alternative".equals(method) || "system".equals(method)) {
-                    translatePendingExternal(isTranscription, pendingTranslation1);
-                    return;
-                }/* else if ("system".equals(method)) {
-                    final String toLanguage = pendingTranslation1.language;
-                    for (int i = 0; i < pendingTranslation1.messageIds.size(); ++i) {
-                        final int id = pendingTranslation1.messageIds.get(i);
-                        final Utilities.Callback3<Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
-                        final String _text = pendingTranslation1.messageTexts.get(i).text;
-                        systemTranslate(_text, null, toLanguage, result -> {
-                            if (result != null) {
-                                final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
-                                resultWithEntities.text = result;
-                                _callback.run(id, resultWithEntities, toLanguage);
-                            } else {
-                                toggleTranslatingDialog(dialogId, false);
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
-                            }
-                        });
-                    }
-                    return;
-                }*/
-
                 final TLRPC.TL_messages_translateText req = new TLRPC.TL_messages_translateText();
-                if (isTranscription) {
+                if (isTranscription || FlexConfig.usesExternalTranslationProvider()) {
                     req.flags |= 2;
                     req.text.addAll(pendingTranslation1.messageTexts);
                 } else {
@@ -1266,9 +1216,6 @@ public class TranslateController extends BaseController {
                         for (int i = 0; i < count; ++i) {
                             callbacks.get(i).run(isTranscription, ids.get(i), TranslateAlert2.preprocess(texts.get(i), translated.get(i)), toLanguage);
                         }
-                    } else if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text) && FlexConfig.usesExternalTranslationProvider()) {
-                        translatePendingExternal(isTranscription, pendingTranslation1);
-                        return;
                     } else if (err != null && "TO_LANG_INVALID".equals(err.text)) {
                         toggleTranslatingDialog(dialogId, false);
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert2));
@@ -1277,8 +1224,8 @@ public class TranslateController extends BaseController {
                             toggleTranslatingDialog(dialogId, false);
                             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert2));
                         }
-                        if (err != null && "QUOTA_EXCEEDED".equals(err.text)) {
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert1));
+                        if (err != null && !"TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, "QUOTA_EXCEEDED".equals(err.text) ? getString(R.string.TranslationFailedAlert1) : err.text);
                         }
                         for (int i = 0; i < callbacks.size(); ++i) {
                             callbacks.get(i).run(isTranscription, ids.get(i), null, pendingTranslation1.language);
@@ -1547,8 +1494,8 @@ public class TranslateController extends BaseController {
                         toggleTranslatingDialog(dialogId, false);
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert2));
                     } else {
-                        if (err != null && "QUOTA_EXCEEDED".equals(err.text)) {
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert1));
+                        if (err != null && !"TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, "QUOTA_EXCEEDED".equals(err.text) ? getString(R.string.TranslationFailedAlert1) : err.text);
                         }
                         for (int i = 0; i < callbacks.size(); ++i) {
                             callbacks.get(i).run(ids.get(i), null, pendingTranslation1.language);
@@ -1662,8 +1609,8 @@ public class TranslateController extends BaseController {
                         toggleTranslatingDialog(dialogId, false);
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert2));
                     } else {
-                        if (err != null && "QUOTA_EXCEEDED".equals(err.text)) {
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert1));
+                        if (err != null && !"TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, "QUOTA_EXCEEDED".equals(err.text) ? getString(R.string.TranslationFailedAlert1) : err.text);
                         }
                         for (int i = 0; i < callbacks.size(); ++i) {
                             callbacks.get(i).run(ids.get(i), null, pendingTranslation1.language);

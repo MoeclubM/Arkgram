@@ -252,7 +252,6 @@ public class FlexAiSummaryActivity extends UniversalFragment {
                 FlexConfig.getAiSummaryLlmModel(),
                 FlexConfig.getAiSummaryLlmPrompt(),
                 buildSummaryPrompt(summaryData),
-                0.2,
                 (result, error) -> {
                     generating = false;
                     try {

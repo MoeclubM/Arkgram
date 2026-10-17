@@ -855,6 +855,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
     private static TL_iv.TL_inputRichMessage toInput(TL_iv.RichMessage rich) {
         final TL_iv.TL_inputRichMessage in = new TL_iv.TL_inputRichMessage();
+        in.localSource = rich;
         if (rich == null) return in;
         in.rtl = rich.rtl;
         in.blocks = new ArrayList<>(rich.blocks.size());

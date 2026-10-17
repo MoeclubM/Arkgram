@@ -54,7 +54,7 @@
     <string name="FlexClearTelegramBlocklistConfirm">要解除 Telegram 自带黑名单中的全部用户和群组吗？</string>
     <string name="FlexTelegramBlocklistCleared">Telegram 黑名单已清空：%1$d</string>
     <string name="FlexAdBlockClearMessages">清空已屏蔽消息</string>
-    <string name="FlexAdBlockInfo">启用后，会在本地隐藏命中广告、关键词、特定消息/转发消息或特定用户的消息。可在消息菜单中添加消息或用户规则。</string>
+    <string name="FlexAdBlockInfo">过滤只在本地生效；赞助广告可单独全部隐藏。消息菜单可添加消息和用户规则，此处可逐条删除规则。</string>
     <string name="FlexBlockThisAd">屏蔽此广告</string>
     <string name="FlexTranslationSettings">翻译</string>
     <string name="FlexFileManagement">文件管理</string>
@@ -74,9 +74,8 @@
     <string name="FlexViewRawJson">查看原始 JSON</string>
     <string name="FlexRawJsonCopied">原始 JSON 已复制到剪贴板</string>
     <string name="FlexDisableMarkdown">禁用 Markdown 解析</string>
-    <string name="FlexNewMarkdownParser">使用新版 Markdown 解析器</string>
     <string name="FlexMarkdownParseLinks">解析 Markdown 链接</string>
-    <string name="FlexMarkdownInfo">Nagram 风格的 Markdown 可渲染代码块、剧透、删除线和行内链接。</string>
+    <string name="FlexMarkdownInfo">复用 Telegram 官方 Markdown 解析器。链接扩展可额外识别 [文字](https://example.com)。</string>
     <string name="FlexTranslationProvider">翻译提供商</string>
     <string name="FlexTranslationProviderTelegram">Telegram 翻译</string>
     <string name="FlexTranslationProviderGoogle">Google 翻译</string>
@@ -104,7 +103,7 @@
     <string name="FlexTranslationRequestFailed">翻译请求失败。</string>
     <string name="FlexTranslationInfo">选择要使用的翻译提供商。外部提供商需要你自行提供 API 凭据。</string>
     <string name="FlexLlmSettings">LLM</string>
-    <string name="FlexLlmSettingsInfo">配置共享提供商端点、API Key 和模型列表。翻译与 AI 摘要会从合并后的模型列表中选择。</string>
+    <string name="FlexLlmSettingsInfo">配置共享端点、API Key 和模型列表。翻译、聊天摘要和 Telegram AI 功能可分别选择模型。</string>
     <string name="FlexLlmFeatures">功能</string>
     <string name="FlexLlmProviders">提供商</string>
     <string name="FlexLlmProvider">LLM 提供商</string>
@@ -121,7 +120,7 @@
     <string name="FlexLlmApiTypeResponses">Responses</string>
     <string name="FlexLlmApiTypeClaudeMessages">Claude Messages</string>
     <string name="FlexLlmApiUrl">LLM API URL</string>
-    <string name="FlexLlmApiUrlHint">先选择 API 类型，再输入完整接口 URL。内置提供商会自动填入默认值。</string>
+    <string name="FlexLlmApiUrlHint">输入完整请求接口，或以 /v1 结尾的 API 基础地址。所选 API 类型决定请求路径。</string>
     <string name="FlexLlmApiKey">LLM API Key</string>
     <string name="FlexLlmModel">LLM 模型</string>
     <string name="FlexLlmModelHint">输入请求使用的模型名称。</string>
@@ -136,7 +135,7 @@
     <string name="FlexLlmModelsCount">%1$d 个模型</string>
     <string name="FlexLlmClearValue">清除</string>
     <string name="FlexLlmApiUrlMissing">未设置 LLM API URL。</string>
-    <string name="FlexLlmModelMissing">未设置 LLM 模型。</string>
+    <string name="FlexLlmModelMissing">请先在 LLM 功能设置中选择模型。</string>
     <string name="FlexLlmInvalidResponse">LLM 提供商返回了无效响应。</string>
     <string name="FlexLlmResponseIncomplete">LLM 提供商未完整生成响应。</string>
     <string name="FlexLlmRequestFailed">LLM 请求失败。</string>
@@ -180,4 +179,9 @@
     <string name="BrowserSettingsOpenModeSystem">系统浏览器</string>
     <string name="BrowserSettingsOpenModeInApp">应用内浏览器</string>
     <string name="BrowserSettingsOpenModeInfo">选择普通网页链接默认使用的打开方式。</string>
+    <string name="FlexBlockSponsoredAds">屏蔽全部赞助广告</string>
+    <string name="FlexOfficialAi">Telegram AI 提供商</string>
+    <string name="FlexOfficialAiInfo">为校对、改写、消息摘要和文章生成选择 Telegram 或已配置的模型。外部服务会接收选中的文本，使用该服务自身的额度；翻译使用单独的提供商设置。不会自动切换提供商。</string>
+    <string name="FlexAiSourceMissing">本地没有原始消息，请先打开消息加载内容后重试。</string>
+    <string name="FlexAiToneMissing">外部模型无法读取此 Telegram 风格的提示词，请选择内置风格或输入自定义提示词。</string>
 </resources>

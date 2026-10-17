@@ -5145,7 +5145,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             boolean withMarkdown = FlexConfig.isMarkdownDisabled();
             options.add(R.drawable.menu_feature_code, getString(withMarkdown ? R.string.SendWithMarkdown : R.string.SendWithoutMarkdown), () -> {
                 sentFromPreview = System.currentTimeMillis();
-                final boolean shownDialog = sendMessageInternal(true, 0, 0, 0, true, SendMessageInternalParams.markdown(withMarkdown));
+                final boolean shownDialog = sendMessageInternal(true, 0, 0, 0, true, withMarkdown);
                 if (!containsSendMessage && messageSendPreview != null) {
                     messageSendPreview.dismiss(!shownDialog);
                     messageSendPreview = null;
@@ -7291,10 +7291,10 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     protected boolean sendMessageInternal(boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, boolean allowConfirm) {
-        return sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, allowConfirm, new SendMessageInternalParams());
+        return sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, allowConfirm, null);
     }
 
-    protected boolean sendMessageInternal(boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, boolean allowConfirm, SendMessageInternalParams internalParams) {
+    protected boolean sendMessageInternal(boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, boolean allowConfirm, Boolean withMarkdown) {
         final boolean allowConfirmFinal = allowConfirm && !animatorEphemeralMessageVisibility.getValue();
 
         final Runnable send = () -> {
@@ -7319,7 +7319,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
             if (allowConfirmFinal && showConfirmAlert(() -> {
-                sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false, internalParams);
+                sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false, withMarkdown);
             })) {
                 return;
             }
@@ -7413,7 +7413,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (checkPremiumAnimatedEmoji(currentAccount, dialog_id, parentFragment, null, message)) {
                 return;
             }
-            if (processSendingText(message, notify, scheduleDate, scheduleRepeatPeriod, payStars, internalParams)) {
+            if (processSendingText(message, notify, scheduleDate, scheduleRepeatPeriod, payStars, withMarkdown)) {
                 if (delegate.hasForwardingMessages() || (scheduleDate != 0 && !isInScheduleMode()) || isInScheduleMode()) {
                     if (messageEditText != null) {
                         messageEditText.setText("");
@@ -7443,7 +7443,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             updateSendButtonPaid();
         };
         if (allowConfirmFinal) {
-            boolean alertShown = AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, getMessagesCount(), starsPrice -> sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, starsPrice, false, internalParams), payStars);
+            boolean alertShown = AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, getMessagesCount(), starsPrice -> sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, starsPrice, false, withMarkdown), payStars);
             if (alertShown && sendButtonVisible) {
                 if (isInVideoMode()) {
                     if (delegate.isVideoRecordingPaused())
@@ -7469,16 +7469,6 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else {
             send.run();
             return false;
-        }
-    }
-
-    public static class SendMessageInternalParams {
-        public Boolean withMarkdown;
-
-        public static SendMessageInternalParams markdown(boolean withMarkdown) {
-            SendMessageInternalParams params = new SendMessageInternalParams();
-            params.withMarkdown = withMarkdown;
-            return params;
         }
     }
 
@@ -7810,11 +7800,10 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     public boolean processSendingText(CharSequence text, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars) {
-        return processSendingText(text, notify, scheduleDate, scheduleRepeatPeriod, payStars, new SendMessageInternalParams());
+        return processSendingText(text, notify, scheduleDate, scheduleRepeatPeriod, payStars, null);
     }
 
-    public boolean processSendingText(CharSequence text, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, SendMessageInternalParams internalParams) {
-        boolean withMarkdown = internalParams.withMarkdown == null ? !FlexConfig.isMarkdownDisabled() : internalParams.withMarkdown;
+    public boolean processSendingText(CharSequence text, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, Boolean withMarkdown) {
         if (replyingQuote != null && parentFragment != null && replyingQuote.outdated) {
             parentFragment.showQuoteMessageUpdate();
             return false;
@@ -7874,7 +7863,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     part = AndroidUtilities.getTrimmedString(part);
                 }
                 CharSequence[] message = new CharSequence[]{part};
-                ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message, supportsNewEntities);
+                ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message, supportsNewEntities, withMarkdown == null ? !FlexConfig.isMarkdownDisabled() : withMarkdown);
                 MessageObject.SendAnimationData sendAnimationData = null;
 
                 if (!delegate.hasForwardingMessages()) {
@@ -7893,11 +7882,6 @@ public class ChatActivityEnterView extends FrameLayout implements
                     sendAnimationData = new MessageObject.SendAnimationData();
                     sendAnimationData.fromPreview = System.currentTimeMillis() - sentFromPreview < 200;
                 }
-                if (!withMarkdown) {
-                    message[0] = part.toString();
-                    entities = new ArrayList<>();
-                }
-
                 boolean updateStickersOrder = false;
                 updateStickersOrder = SendMessagesHelper.checkUpdateStickersOrder(text);
 

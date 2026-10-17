@@ -11332,7 +11332,7 @@
     <string name="FlexClearTelegramBlocklistConfirm">Unblock every user and chat in Telegram\'s built-in blocklist?</string>
     <string name="FlexTelegramBlocklistCleared">Telegram blocklist cleared: %1$d</string>
     <string name="FlexAdBlockClearMessages">Clear Blocked Messages</string>
-    <string name="FlexAdBlockInfo">When enabled, matching ads, keywords, messages, forwards, or users are hidden locally. Use a message menu to add message or user rules.</string>
+    <string name="FlexAdBlockInfo">Filtering is local. Sponsored ads can be hidden together. Add message and user rules from the message menu; remove individual rules here.</string>
     <string name="FlexBlockThisAd">Block This Ad</string>
     <string name="FlexTranslationSettings">Translation</string>
     <string name="FlexFileManagement">File Management</string>
@@ -11352,9 +11352,8 @@
     <string name="FlexViewRawJson">View Raw JSON</string>
     <string name="FlexRawJsonCopied">Raw JSON copied to clipboard</string>
     <string name="FlexDisableMarkdown">Disable Markdown Parsing</string>
-    <string name="FlexNewMarkdownParser">Use New Markdown Parser</string>
     <string name="FlexMarkdownParseLinks">Parse Markdown Links</string>
-    <string name="FlexMarkdownInfo">Nagram-style Markdown can render code blocks, spoilers, strike-through, and inline links.</string>
+    <string name="FlexMarkdownInfo">Uses Telegram’s built-in Markdown parser. The optional link extension supports [text](https://example.com).</string>
     <string name="FlexTranslationProvider">Translation Provider</string>
     <string name="FlexTranslationProviderTelegram">Telegram Translate</string>
     <string name="FlexTranslationProviderGoogle">Google Translate</string>
@@ -11382,7 +11381,7 @@
     <string name="FlexTranslationRequestFailed">The translation request failed.</string>
     <string name="FlexTranslationInfo">Choose the translation provider to use. External providers require your own API credentials.</string>
     <string name="FlexLlmSettings">LLM</string>
-    <string name="FlexLlmSettingsInfo">Configure shared provider endpoints, API keys, and model lists. Translation and AI summary choose models from the combined list.</string>
+    <string name="FlexLlmSettingsInfo">Configure shared endpoints, API keys and model lists. Translation, chat summaries and Telegram AI features select their models separately.</string>
     <string name="FlexLlmFeatures">Features</string>
     <string name="FlexLlmProviders">Providers</string>
     <string name="FlexLlmProvider">LLM Provider</string>
@@ -11399,7 +11398,7 @@
     <string name="FlexLlmApiTypeResponses">Responses</string>
     <string name="FlexLlmApiTypeClaudeMessages">Claude Messages</string>
     <string name="FlexLlmApiUrl">LLM API URL</string>
-    <string name="FlexLlmApiUrlHint">Choose the API type, then enter the complete endpoint URL. Built-in providers fill in a default value automatically.</string>
+    <string name="FlexLlmApiUrlHint">Enter the complete request endpoint or an API base URL ending in /v1. The selected API type determines the request path.</string>
     <string name="FlexLlmApiKey">LLM API Key</string>
     <string name="FlexLlmModel">LLM Model</string>
     <string name="FlexLlmModelHint">Enter the model name used for requests.</string>
@@ -11414,7 +11413,7 @@
     <string name="FlexLlmModelsCount">%1$d models</string>
     <string name="FlexLlmClearValue">Clear</string>
     <string name="FlexLlmApiUrlMissing">LLM API URL is not set.</string>
-    <string name="FlexLlmModelMissing">LLM model is not set.</string>
+    <string name="FlexLlmModelMissing">Select a model in the LLM feature settings first.</string>
     <string name="FlexLlmInvalidResponse">The LLM provider returned an invalid response.</string>
     <string name="FlexLlmResponseIncomplete">The LLM provider did not complete the response.</string>
     <string name="FlexLlmRequestFailed">The LLM request failed.</string>
@@ -11455,4 +11454,9 @@
     <string name="FlexAiSummaryCharactersUnit">characters</string>
     <string name="SendWithMarkdown">Send with Markdown</string>
     <string name="SendWithoutMarkdown">Send without Markdown</string>
+    <string name="FlexBlockSponsoredAds">Block All Sponsored Ads</string>
+    <string name="FlexOfficialAi">Telegram AI Provider</string>
+    <string name="FlexOfficialAiInfo">Choose Telegram or a configured model for proofreading, rewriting, message summaries and article generation. External services receive the selected text and use their own quota. Translation uses its separate provider setting. Providers are never switched automatically.</string>
+    <string name="FlexAiSourceMissing">The original message is not available locally. Open the message to load it before retrying.</string>
+    <string name="FlexAiToneMissing">The prompt for this Telegram style is not available to external models. Use a built-in style or enter a custom prompt.</string>
 </resources>

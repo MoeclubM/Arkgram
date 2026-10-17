@@ -112,6 +112,7 @@ public class FlexTranslateSettingsActivity extends UniversalFragment {
         builder.setItems(items, (dialog, which) -> {
             FlexConfig.setTranslationProvider(which);
             listView.adapter.update(true);
+            if (which == FlexConfig.TRANSLATION_PROVIDER_LLM) presentFragment(new FlexLlmFeatureSettingsActivity(false));
         });
         showDialog(builder.create());
     }

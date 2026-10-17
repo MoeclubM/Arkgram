@@ -9637,6 +9637,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
     private static TL_iv.TL_inputRichMessage richMessageToInputRichMessage(TL_iv.RichMessage rich, ArrayList<TLRPC.InputUser> users) {
         TL_iv.TL_inputRichMessage out = new TL_iv.TL_inputRichMessage();
+        out.localSource = rich;
         if (rich == null) {
             return out;
         }

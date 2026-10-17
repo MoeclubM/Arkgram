@@ -35,6 +35,7 @@ import org.telegram.messenger.EmuDetector;
 import org.telegram.messenger.FileLoadOperation;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexAiRequest;
 import org.telegram.messenger.FileUploadOperation;
 import org.telegram.messenger.KeepAliveJob;
 import org.telegram.messenger.LocaleController;
@@ -123,6 +124,7 @@ public class ConnectionsManager extends BaseController {
     private boolean isUpdating;
     private int connectionState;
     private AtomicInteger lastRequestToken = new AtomicInteger(1);
+    private final ConcurrentHashMap<Integer, FlexAiRequest> externalAiRequests = new ConcurrentHashMap<>();
     private int appResumeCount;
 
     private static AsyncTask currentTask;
@@ -388,6 +390,16 @@ public class ConnectionsManager extends BaseController {
     }
 
     private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
+        if (FlexAiRequest.supports(object)) {
+            FlexAiRequest request = new FlexAiRequest(currentAccount, object, (result, error) -> {
+                externalAiRequests.remove(requestToken);
+                if (onComplete != null) onComplete.run(result, error);
+                else if (onCompleteTimestamp != null) onCompleteTimestamp.run(result, error, getCurrentTime());
+            });
+            externalAiRequests.put(requestToken, request);
+            request.start();
+            return;
+        }
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }
@@ -572,6 +584,12 @@ public class ConnectionsManager extends BaseController {
 
     public void cancelRequest(int token, boolean notifyServer, Runnable onCancelled) {
         Utilities.stageQueue.postRunnable(() -> {
+            FlexAiRequest external = externalAiRequests.remove(token);
+            if (external != null) {
+                external.cancel();
+                if (onCancelled != null) onCancelled.run();
+                return;
+            }
             if (onCancelled != null) {
                 listenCancel(token, () -> {
                     Utilities.stageQueue.postRunnable(onCancelled);
@@ -582,11 +600,19 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void cleanup(boolean resetKeys) {
+        for (FlexAiRequest request : externalAiRequests.values()) request.cancel();
+        externalAiRequests.clear();
         native_cleanUp(currentAccount, resetKeys);
     }
 
     public void cancelRequestsForGuid(int guid) {
         Utilities.stageQueue.postRunnable(() -> {
+            for (java.util.Map.Entry<Integer, FlexAiRequest> entry : externalAiRequests.entrySet()) {
+                if (entry.getValue().guid == guid) {
+                    externalAiRequests.remove(entry.getKey());
+                    entry.getValue().cancel();
+                }
+            }
             native_cancelRequestsForGuid(currentAccount, guid);
         });
     }
@@ -595,7 +621,11 @@ public class ConnectionsManager extends BaseController {
         if (guid == 0) {
             return;
         }
-        native_bindRequestToGuid(currentAccount, requestToken, guid);
+        Utilities.stageQueue.postRunnable(() -> {
+            FlexAiRequest request = externalAiRequests.get(requestToken);
+            if (request != null) request.guid = guid;
+            else native_bindRequestToGuid(currentAccount, requestToken, guid);
+        });
     }
 
     public void applyDatacenterAddress(int datacenterId, String ipAddress, int port) {

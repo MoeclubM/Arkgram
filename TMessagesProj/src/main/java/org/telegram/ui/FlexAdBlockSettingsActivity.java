@@ -30,6 +30,10 @@ public class FlexAdBlockSettingsActivity extends UniversalFragment implements No
     private static final int ID_KEYWORD = 3;
     private static final int ID_CLEAR_RULES = 4;
     private static final int ID_CLEAR_TELEGRAM_BLOCKLIST = 5;
+    private static final int ID_SPONSORED = 6;
+    private static final int ID_AD_RULE = 7;
+    private static final int ID_MESSAGE_RULE = 8;
+    private static final int ID_USER_RULE = 9;
 
     @Override
     public boolean onFragmentCreate() {
@@ -56,6 +60,7 @@ public class FlexAdBlockSettingsActivity extends UniversalFragment implements No
 
         items.add(UItem.asHeader(getString(R.string.FlexAdBlockSettings)));
         items.add(UItem.asCheck(ID_ENABLE, getString(R.string.FlexAdBlockEnabled)).setChecked(FlexConfig.isAdBlockEnabled()));
+        items.add(UItem.asCheck(ID_SPONSORED, getString(R.string.FlexBlockSponsoredAds)).setChecked(FlexConfig.isSponsoredAdBlockEnabled()));
 
         items.add(UItem.asHeader(getString(R.string.FlexAdBlockKeywords)));
         items.add(UItem.asButton(ID_ADD_KEYWORD, R.drawable.menu_tag_filter, getString(R.string.FlexAdBlockAddKeyword)));
@@ -71,8 +76,15 @@ public class FlexAdBlockSettingsActivity extends UniversalFragment implements No
         }
 
         items.add(UItem.asHeader(getString(R.string.FlexAdBlockRules)));
-        items.add(UItem.asButton(0, R.drawable.msg_block2, getString(R.string.FlexAdBlockBlockedMessages), String.valueOf(FlexConfig.getAdBlockedMessageCount() + FlexConfig.getAdBlockedMessageRuleCount())).setEnabled(false));
-        items.add(UItem.asButton(0, R.drawable.msg_block2, getString(R.string.FlexAdBlockBlockedUsers), String.valueOf(FlexConfig.getAdBlockedUserCount())).setEnabled(false));
+        for (int kind = ID_AD_RULE; kind <= ID_USER_RULE; kind++) {
+            String rules = kind == ID_AD_RULE ? FlexConfig.getAdBlockedMessageIdsText() : kind == ID_MESSAGE_RULE ? FlexConfig.getAdBlockedMessageRulesText() : FlexConfig.getAdBlockedUsersText();
+            for (String rule : rules.split("\n")) {
+                if (rule.isEmpty()) continue;
+                UItem row = UItem.asButton(kind, R.drawable.msg_delete, rule, getString(R.string.Delete));
+                row.object = rule;
+                items.add(row);
+            }
+        }
         items.add(UItem.asButton(ID_CLEAR_RULES, R.drawable.msg_delete, getString(R.string.FlexAdBlockClearRules), String.valueOf(FlexConfig.getAdBlockRuleCount())).red());
 
         items.add(UItem.asHeader(getString(R.string.FlexTelegramBlocklist)));
@@ -86,10 +98,16 @@ public class FlexAdBlockSettingsActivity extends UniversalFragment implements No
             FlexConfig.setAdBlockEnabled(!FlexConfig.isAdBlockEnabled());
             notifyChanged();
             listView.adapter.update(true);
+        } else if (item.id == ID_SPONSORED) {
+            FlexConfig.setSponsoredAdBlockEnabled(!FlexConfig.isSponsoredAdBlockEnabled());
+            notifyChanged();
+            listView.adapter.update(true);
+        } else if (item.id >= ID_AD_RULE && item.id <= ID_USER_RULE) {
+            showRemoveRuleDialog(item.id, (String) item.object);
         } else if (item.id == ID_ADD_KEYWORD) {
             showAddKeywordDialog();
         } else if (item.id == ID_KEYWORD) {
-            showRemoveKeywordDialog((String) item.object);
+            showRemoveRuleDialog(ID_KEYWORD, (String) item.object);
         } else if (item.id == ID_CLEAR_RULES) {
             showClearRulesDialog();
         } else if (item.id == ID_CLEAR_TELEGRAM_BLOCKLIST) {
@@ -157,15 +175,25 @@ public class FlexAdBlockSettingsActivity extends UniversalFragment implements No
         AndroidUtilities.showKeyboard(editText);
     }
 
-    private void showRemoveKeywordDialog(String keyword) {
+    private void showRemoveRuleDialog(int kind, String keyword) {
         if (getContext() == null) {
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle(getString(R.string.FlexAdBlockRemoveKeyword));
+        builder.setTitle(getString(R.string.Delete));
         builder.setMessage(keyword);
         builder.setPositiveButton(getString(R.string.Delete), (dialog, which) -> {
-            FlexConfig.removeAdBlockKeyword(keyword);
+            if (kind == ID_KEYWORD) {
+                FlexConfig.removeAdBlockKeyword(keyword);
+            } else {
+                String rules = kind == ID_AD_RULE ? FlexConfig.getAdBlockedMessageIdsText() : kind == ID_MESSAGE_RULE ? FlexConfig.getAdBlockedMessageRulesText() : FlexConfig.getAdBlockedUsersText();
+                ArrayList<String> remaining = new ArrayList<>(java.util.Arrays.asList(rules.split("\n")));
+                remaining.remove(keyword);
+                String value = TextUtils.join("\n", remaining);
+                if (kind == ID_AD_RULE) FlexConfig.setAdBlockedMessageIdsText(value);
+                else if (kind == ID_MESSAGE_RULE) FlexConfig.setAdBlockedMessageRulesText(value);
+                else FlexConfig.setAdBlockedUsersText(value);
+            }
             notifyChanged();
             listView.adapter.update(true);
         });
