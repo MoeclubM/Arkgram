@@ -12,6 +12,8 @@ import org.telegram.ui.Components.TranslateAlert2;
 import org.telegram.ui.iv.RichMessageConvert;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Adapts the existing Telegram text/AI requests to the selected external service. */
 public class FlexAiRequest {
@@ -26,7 +28,8 @@ public class FlexAiRequest {
     private final String apiKey;
     private final int apiType;
     private volatile boolean cancelled;
-    private volatile Runnable cancellation;
+    private final ConcurrentLinkedQueue<Runnable> cancellations = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean completed = new AtomicBoolean();
 
     public static boolean supports(TLObject method) {
         return ((method instanceof TLRPC.TL_messages_translateText || method instanceof TLRPC.TL_messages_translateRichMessage) && FlexConfig.usesExternalTranslationProvider()) ||
@@ -54,13 +57,13 @@ public class FlexAiRequest {
                     TLRPC.TL_messages_translateText req = (TLRPC.TL_messages_translateText) method;
                     ArrayList<TLRPC.TL_textWithEntities> texts = new ArrayList<>(req.text);
                     for (int id : req.id) texts.add(messageText(loadMessage(req.peer, id)));
-                    translate(texts, req.to_lang, 0, new TLRPC.TL_messages_translateResult());
+                    AndroidUtilities.runOnUIThread(() -> translate(texts, req.to_lang, new TLRPC.TL_messages_translateResult()));
                 } else if (method instanceof TLRPC.TL_messages_translateRichMessage) {
                     TLRPC.TL_messages_translateRichMessage req = (TLRPC.TL_messages_translateRichMessage) method;
                     ArrayList<TL_iv.RichMessage> texts = new ArrayList<>();
                     for (TL_iv.TL_inputRichMessage input : req.text) texts.add(input.localSource);
                     for (int id : req.id) texts.add(loadMessage(req.peer, id).rich_message);
-                    translateRich(texts, req.to_lang, req.tone, 0, new TLRPC.TL_messages_translatedRichMessage());
+                    AndroidUtilities.runOnUIThread(() -> translateRich(texts, req.to_lang, req.tone, new TLRPC.TL_messages_translatedRichMessage()));
                 } else if (method instanceof TLRPC.TL_messages_summarizeText) {
                     TLRPC.TL_messages_summarizeText req = (TLRPC.TL_messages_summarizeText) method;
                     String instruction = "Summarize the supplied message accurately and concisely. Preserve its important facts. Return only the summary.";
@@ -126,57 +129,57 @@ public class FlexAiRequest {
         return result;
     }
 
-    private void translate(ArrayList<TLRPC.TL_textWithEntities> texts, String language, int index, TLRPC.TL_messages_translateResult result) {
-        if (cancelled) return;
-        if (index == texts.size()) {
-            finish(result, null);
-            return;
-        }
-        TLRPC.TL_textWithEntities source = texts.get(index);
-        Utilities.Callback2<String, String> done = (text, error) -> {
-            if (error != null) {
-                finish(null, error);
-            } else {
-                TLRPC.TL_textWithEntities translated = new TLRPC.TL_textWithEntities();
-                translated.text = text;
-                result.result.add(TranslateAlert2.preprocess(source, translated));
-                translate(texts, language, index + 1, result);
-            }
-        };
-        if (TextUtils.isEmpty(source.text)) {
-            done.run("", null);
-        } else if (translationProvider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
-            if (source.entities.isEmpty()) {
-                requestText(FlexConfig.getLlmPrompt(), "Target language: " + language + "\nText:\n" + source.text, done);
-            } else {
-                TL_iv.RichMessage rich = RichMessageConvert.fromCharSequence(MessageObject.formatTextWithEntities(source));
-                transformRich(rich, FlexConfig.getLlmPrompt() + " Target language: " + language + ".", language, (translated, error) -> {
+    private void translate(ArrayList<TLRPC.TL_textWithEntities> texts, String language, TLRPC.TL_messages_translateResult result) {
+        Utilities.Callback<Runnable>[] actions = new Utilities.Callback[texts.size()];
+        for (int i = 0; i < texts.size(); i++) {
+            final int index = i;
+            result.result.add(null);
+            actions[i] = next -> {
+                TLRPC.TL_textWithEntities source = texts.get(index);
+                Utilities.Callback2<TLRPC.TL_textWithEntities, String> done = (text, error) -> {
                     if (error != null) finish(null, error);
                     else {
-                        TLRPC.TL_textWithEntities value = entities(RichMessageConvert.toCharSequence(translated), false);
-                        result.result.add(TranslateAlert2.preprocess(source, value));
-                        translate(texts, language, index + 1, result);
+                        result.result.set(index, TranslateAlert2.preprocess(source, text));
+                        next.run();
                     }
-                });
-            }
-        } else {
-            FlexTranslationHelper.translate(translationProvider, source.text, null, language, (text, limit, error) -> done.run(text, error));
+                };
+                Utilities.Callback2<String, String> plainDone = (text, error) -> {
+                    TLRPC.TL_textWithEntities translated = new TLRPC.TL_textWithEntities();
+                    translated.text = text;
+                    done.run(error == null ? translated : null, error);
+                };
+                if (TextUtils.isEmpty(source.text)) {
+                    plainDone.run("", null);
+                } else if (translationProvider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
+                    if (source.entities.isEmpty()) {
+                        requestText(FlexConfig.getLlmPrompt(), "Target language: " + language + "\nText:\n" + source.text, plainDone);
+                    } else {
+                        TL_iv.RichMessage rich = RichMessageConvert.fromCharSequence(MessageObject.formatTextWithEntities(source));
+                        transformRich(rich, FlexConfig.getLlmPrompt() + " Target language: " + language + ".", language, (translated, error) ->
+                            done.run(error == null ? entities(RichMessageConvert.toCharSequence(translated), false) : null, error));
+                    }
+                } else {
+                    FlexTranslationHelper.translate(translationProvider, source.text, null, language, (text, limit, error) -> plainDone.run(text, error));
+                }
+            };
         }
+        Utilities.raceCallbacks(() -> finish(result, null), actions);
     }
 
-    private void translateRich(ArrayList<TL_iv.RichMessage> texts, String language, String tone, int index, TLRPC.TL_messages_translatedRichMessage result) {
-        if (cancelled) return;
-        if (index == texts.size()) {
-            finish(result, null);
-            return;
+    private void translateRich(ArrayList<TL_iv.RichMessage> texts, String language, String tone, TLRPC.TL_messages_translatedRichMessage result) {
+        Utilities.Callback<Runnable>[] actions = new Utilities.Callback[texts.size()];
+        for (int i = 0; i < texts.size(); i++) {
+            final int index = i;
+            result.result.add(null);
+            actions[i] = next -> transformRich(texts.get(index), "Translate into " + language + "." + (TextUtils.isEmpty(tone) ? "" : " Tone: " + tone + "."), language, (rich, error) -> {
+                if (error != null) finish(null, error);
+                else {
+                    result.result.set(index, rich);
+                    next.run();
+                }
+            });
         }
-        transformRich(texts.get(index), "Translate into " + language + "." + (TextUtils.isEmpty(tone) ? "" : " Tone: " + tone + "."), language, (rich, error) -> {
-            if (error != null) finish(null, error);
-            else {
-                result.result.add(rich);
-                translateRich(texts, language, tone, index + 1, result);
-            }
-        });
+        Utilities.raceCallbacks(() -> finish(result, null), actions);
     }
 
     private void transformRich(TL_iv.RichMessage source, String instruction, String language, Utilities.Callback2<TL_iv.RichMessage, String> done) {
@@ -244,8 +247,8 @@ public class FlexAiRequest {
 
     private void requestText(String instruction, String text, Utilities.Callback2<String, String> done) {
         if (cancelled) return;
-        cancellation = FlexLlmHelper.requestText(apiType, apiUrl, apiKey, FlexConfig.getLlmModelFromRef(modelRef), instruction + (method instanceof TLRPC.TL_messages_translateText || method instanceof TLRPC.TL_messages_translateRichMessage ? "" : "\n" + FlexConfig.getOfficialAiPrompt()), text, (result, error) -> {
-            if (cancelled) return;
+        Runnable cancellation = FlexLlmHelper.requestText(apiType, apiUrl, apiKey, FlexConfig.getLlmModelFromRef(modelRef), instruction + (method instanceof TLRPC.TL_messages_translateText || method instanceof TLRPC.TL_messages_translateRichMessage ? "" : "\n" + FlexConfig.getOfficialAiPrompt()), text, (result, error) -> {
+            if (cancelled || completed.get()) return;
             try {
                 done.run(result, error);
             } catch (Exception e) {
@@ -253,10 +256,14 @@ public class FlexAiRequest {
                 finish(null, e.getMessage());
             }
         });
-        if (cancelled && cancellation != null) cancellation.run();
+        if (cancellation != null) {
+            cancellations.add(cancellation);
+            if (cancelled || completed.get()) cancellation.run();
+        }
     }
 
     private void finish(TLObject result, String error) {
+        if (!completed.compareAndSet(false, true)) return;
         Utilities.stageQueue.postRunnable(() -> {
             if (cancelled) return;
             TLRPC.TL_error failure = null;
@@ -265,13 +272,13 @@ public class FlexAiRequest {
                 failure.code = -1;
                 failure.text = TextUtils.isEmpty(error) ? LocaleController.getString(R.string.FlexLlmRequestFailed) : error;
             }
+            for (Runnable action : cancellations) action.run();
             completion.run(result, failure);
         });
     }
 
     public void cancel() {
         cancelled = true;
-        Runnable action = cancellation;
-        if (action != null) action.run();
+        for (Runnable action : cancellations) action.run();
     }
 }
