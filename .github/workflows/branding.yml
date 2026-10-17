@@ -30,6 +30,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+      - name: Set up Android resource compiler
+        uses: android-actions/setup-android@v4.0.1
+        with:
+          packages: 'build-tools;36.0.0'
       - name: Install renderers
         run: |
           python -m pip install Pillow==12.3.0
@@ -39,6 +43,11 @@ jobs:
         env:
           NODE_PATH: ${{ runner.temp }}/branding/node_modules
         run: python Tools/branding/verify_logo.py
+      - name: Compile Android resources
+        run: |
+          mkdir -p "$RUNNER_TEMP/branding-resources"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" compile --dir TMessagesProj/src/main/res -o "$RUNNER_TEMP/branding-resources/app.zip"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" compile --dir TMessagesProj_AppStandalone/src/main/res -o "$RUNNER_TEMP/branding-resources/standalone.zip"
       - name: Upload rendered animation previews
         uses: actions/upload-artifact@v7.0.1
         with:
