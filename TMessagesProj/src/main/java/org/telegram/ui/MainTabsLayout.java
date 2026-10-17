@@ -432,9 +432,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         if (navigationDock) {
             final float growth = dp(8) * animatorIsScaled.getFloatValue();
             navigationLensBounds.inset(-growth, -growth);
-            navigationLens.setBounds(Math.round(navigationLensBounds.left), Math.round(navigationLensBounds.top),
-                    Math.round(navigationLensBounds.right), Math.round(navigationLensBounds.bottom));
-            navigationLens.setRadius(navigationLensBounds.height() / 2f);
+            final int top = Math.round(navigationLensBounds.top);
+            final int bottom = Math.round(navigationLensBounds.bottom);
+            if (navigationLens.getBounds().height() != bottom - top) {
+                navigationLens.setRadius(navigationLensBounds.height() / 2f);
+            }
+            navigationLens.setBounds(Math.round(navigationLensBounds.left), top,
+                    Math.round(navigationLensBounds.right), bottom);
             navigationLens.draw(canvas);
         }
         super.dispatchDraw(canvas);
