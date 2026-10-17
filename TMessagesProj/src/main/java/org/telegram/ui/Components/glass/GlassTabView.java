@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -16,6 +17,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -72,6 +74,46 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private int colorDefault;
     private boolean usePremiumCounter;
     private boolean navigationDock;
+    private final RectF navigationLensBounds = new RectF();
+    private final Path navigationLensPath = new Path();
+    private final Paint navigationIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint navigationTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private float navigationLensLift;
+
+    public void setNavigationLensBounds(RectF bounds, float lift) {
+        tmpRectF.set(bounds);
+        tmpRectF.offset(-getX(), -getY());
+        if (!navigationLensBounds.equals(tmpRectF) || navigationLensLift != lift) {
+            navigationLensBounds.set(tmpRectF);
+            navigationLensPath.rewind();
+            navigationLensPath.addRoundRect(tmpRectF, tmpRectF.height() / 2f, tmpRectF.height() / 2f, Path.Direction.CW);
+            navigationLensLift = lift;
+            invalidate();
+        }
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (!navigationDock) {
+            return super.drawChild(canvas, child, drawingTime);
+        }
+        canvas.save();
+        navigationLensPath.setFillType(Path.FillType.INVERSE_WINDING);
+        canvas.clipPath(navigationLensPath);
+        super.drawChild(canvas, child, drawingTime);
+        canvas.restore();
+        canvas.save();
+        navigationLensPath.setFillType(Path.FillType.WINDING);
+        canvas.clipPath(navigationLensPath);
+        final float scale = 1 + 0.16f * navigationLensLift;
+        canvas.scale(scale, scale, (hasVisualWidth ? visualWidth : getWidth()) / 2f, getHeight() / 2f);
+        canvas.saveLayer(0, 0, getWidth(), getHeight(), child == backupImageView ? null
+                : child == textView ? navigationTextPaint : navigationIconPaint);
+        final boolean result = super.drawChild(canvas, child, drawingTime);
+        canvas.restore();
+        canvas.restore();
+        return result;
+    }
 
     private TabAnimation tabAnimation;
     private TLRPC.TL_attachMenuBot tabAnimationBot;
@@ -114,7 +156,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         textView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
                 Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 35, 0, 0));
         textView.setPadding(dp(4), 0, dp(4), 0);
-        setTextSizeDp(11f);
+        setTextSizeDp(10f);
         if (backupImageView != null) {
             backupImageView.setRoundRadius(dp(13));
             backupImageView.setLayoutParams(LayoutHelper.createFrame(26, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 5, 0, 0));
@@ -273,8 +315,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private boolean needUpdateBackupViewColor;
 
     private void updateColors() {
-        final int color = ColorUtils.blendARGB(colorDefault, colorSelected, isSelectedAnimator.getFloatValue());
-        final int colorText = ColorUtils.blendARGB(colorDefault, colorSelectedText, isSelectedAnimator.getFloatValue());
+        final float selection = navigationDock ? 0 : isSelectedAnimator.getFloatValue();
+        final int color = ColorUtils.blendARGB(colorDefault, colorSelected, selection);
+        final int colorText = ColorUtils.blendARGB(colorDefault, colorSelectedText, selection);
+        navigationIconPaint.setColorFilter(new PorterDuffColorFilter(colorSelected, PorterDuff.Mode.SRC_IN));
+        navigationTextPaint.setColorFilter(new PorterDuffColorFilter(colorSelectedText, PorterDuff.Mode.SRC_IN));
 
         final PorterDuffColorFilter filter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
         if (backupImageView != null && needUpdateBackupViewColor) {

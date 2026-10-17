@@ -77,6 +77,7 @@ import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
 import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProviderBuilder;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
@@ -384,6 +385,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewBackground.setRadius(dp(DialogsActivity.MAIN_TABS_HEIGHT / 2f));
         tabsViewBackground.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN - 0.334f));
         tabsView.setBackground(tabsViewBackground);
+        BlurredBackgroundDrawable navigationLens = iBlur3FactoryGlass.create(tabsView,
+                new BlurredBackgroundProviderBuilder(resourceProvider)
+                        .setBackgroundColor((r, dark) -> Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, r), 0.10f))
+                        .setStrokeColorTop(0x88FFFFFF, 0x38FFFFFF)
+                        .setStrokeColorBottom(0x18000000, 0x18FFFFFF)
+                        .setShadowColor(0x18000000, 0x08000000)
+                        .setShadowLayer(dp(3), 0, dp(1))
+                        .setStrokeWidth(dp(0.5f), dp(0.5f))
+                        .build());
+        navigationLens.setThickness(dp(16));
+        tabsView.setNavigationLens(navigationLens);
 
         BlurredBackgroundDrawableViewFactory iBlur3FactoryFade = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
         iBlur3FactoryFade.setSourceRootView(viewPositionWatcher, contentView);

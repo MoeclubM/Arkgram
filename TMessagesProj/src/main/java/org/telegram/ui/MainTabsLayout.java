@@ -7,14 +7,18 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
@@ -22,9 +26,9 @@ import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedLinearLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.glass.GlassTabView;
 
 import java.util.HashSet;
@@ -52,7 +56,28 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private float selectedPosition;
     private float gestureSelectedPosition;
     private boolean gestureSelection;
-    private final AnimatedFloat animatedSelectedPosition = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private final FloatValueHolder animatedSelectedPosition = new FloatValueHolder();
+    private final SpringAnimation selectedPositionSpring = new SpringAnimation(animatedSelectedPosition);
+    private final RectF navigationLensBounds = new RectF();
+    private BlurredBackgroundDrawable navigationLens;
+    private float touchDownX, touchDownY;
+    private boolean draggingDock;
+    private View selectedOnTouchDown;
+
+    {
+        selectedPositionSpring.setSpring(new SpringForce().setStiffness(400).setDampingRatio(0.78f));
+        selectedPositionSpring.addUpdateListener((animation, value, velocity) -> invalidate());
+    }
+
+    public void setNavigationLens(BlurredBackgroundDrawable lens) {
+        navigationLens = lens;
+        lens.setCallback(this);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return who == navigationLens || super.verifyDrawable(who);
+    }
 
     public void setNavigationDock() {
         navigationDock = true;
@@ -60,13 +85,22 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     public void setSelectedPosition(float position, boolean animated) {
         selectedPosition = position;
-        if (!animated) {
-            animatedSelectedPosition.force(position);
+        if (animated) {
+            selectedPositionSpring.animateToFinalPosition(position);
+        } else {
+            selectedPositionSpring.cancel();
+            animatedSelectedPosition.setValue(position);
         }
         invalidate();
     }
 
     public void setGestureSelectedPosition(float position, boolean allow) {
+        if (allow) {
+            selectedPositionSpring.cancel();
+            animatedSelectedPosition.setValue(position);
+        } else if (gestureSelection) {
+            selectedPositionSpring.animateToFinalPosition(selectedPosition);
+        }
         gestureSelectedPosition = position;
         gestureSelection = allow;
         invalidate();
@@ -91,7 +125,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
         if (navigationDock) {
-            measureTabTexts(11f);
+            measureTabTexts(10f);
             int index = 0;
             int left = 0;
             for (int a = 0, count = getChildCount(); a < count; a++) {
@@ -104,7 +138,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                     left = right;
                     index++;
                 }
-                child.setTextSizeDp(11f);
+                child.setTextSizeDp(10f);
                 child.measure(MeasureSpec.makeMeasureSpec(tabsWidth[a], MeasureSpec.EXACTLY),
                         MeasureSpec.makeMeasureSpec(tabHeight, MeasureSpec.EXACTLY));
             }
@@ -355,8 +389,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        final float position = animatedSelectedPosition.set(
-                gestureSelection ? gestureSelectedPosition : selectedPosition, gestureSelection);
+        final float position = Math.max(0, Math.min(visibleChildCount - 1,
+                gestureSelection ? gestureSelectedPosition : animatedSelectedPosition.getValue()));
         if (navigationDock && !drawCustomSelector) {
             float centerX = 0;
             float width = 0;
@@ -372,25 +406,48 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 index++;
             }
             final float height = getHeight() - getPaddingTop() - getPaddingBottom();
-            selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.12f));
-            canvas.drawRoundRect(centerX - width / 2f, getPaddingTop(),
-                    centerX + width / 2f, getHeight() - getPaddingBottom(),
-                    height / 2f, height / 2f, selectorPaint);
+            width = Math.max(dp(84), width + dp(8));
+            centerX = Math.max(getPaddingLeft() - dp(4) + width / 2f,
+                    Math.min(getWidth() - getPaddingRight() + dp(4) - width / 2f, centerX));
+            navigationLensBounds.set(centerX - width / 2f, getPaddingTop(),
+                    centerX + width / 2f, getPaddingTop() + height);
         }
         if (drawCustomSelector) {
             final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
             final float sWidth = getInterpolatedWidthByX(x, this);
             final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
 
-            canvas.drawRoundRect(
-                    x - sWidth / 2f, (getHeight() - sHeight) / 2f,
-                    x + sWidth / 2f, (getHeight() + sHeight) / 2f,
-                    sHeight / 2f, sHeight / 2f, selectorPaint);
+            if (navigationDock) {
+                final float width = Math.max(dp(84), sWidth + dp(8));
+                navigationLensBounds.set(x - width / 2f, (getHeight() - sHeight) / 2f,
+                        x + width / 2f, (getHeight() + sHeight) / 2f);
+            } else {
+                canvas.drawRoundRect(
+                        x - sWidth / 2f, (getHeight() - sHeight) / 2f,
+                        x + sWidth / 2f, (getHeight() + sHeight) / 2f,
+                        sHeight / 2f, sHeight / 2f, selectorPaint);
+            }
         }
 
+        if (navigationDock) {
+            final float growth = dp(8) * animatorIsScaled.getFloatValue();
+            navigationLensBounds.inset(-growth, -growth);
+            navigationLens.setBounds(Math.round(navigationLensBounds.left), Math.round(navigationLensBounds.top),
+                    Math.round(navigationLensBounds.right), Math.round(navigationLensBounds.bottom));
+            navigationLens.setRadius(navigationLensBounds.height() / 2f);
+            navigationLens.draw(canvas);
+        }
         super.dispatchDraw(canvas);
     }
 
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (navigationDock) {
+            ((GlassTabView) child).setNavigationLensBounds(navigationLensBounds,
+                    animatorIsScaled.getFloatValue());
+        }
+        return super.drawChild(canvas, child, drawingTime);
+    }
 
     final Paint selectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     final SpringAnimation scaleX = new SpringAnimation(this, DynamicAnimation.SCALE_X, 1f);
@@ -675,9 +732,47 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (navigationDock) {
             if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                touchDownX = ev.getX();
+                touchDownY = ev.getY();
+                selectedOnTouchDown = findSelectedTab();
                 checkPivot(this, ev.getX(), ev.getY());
                 animatorIsScaled.setValue(true, true);
-            } else if (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+            } else if (ev.getActionMasked() == MotionEvent.ACTION_MOVE && !draggingDock && !isInLongPress
+                    && Math.abs(ev.getX() - touchDownX) > ViewConfiguration.get(getContext()).getScaledTouchSlop()
+                    && Math.abs(ev.getX() - touchDownX) > Math.abs(ev.getY() - touchDownY)) {
+                draggingDock = true;
+                MotionEvent cancel = MotionEvent.obtain(ev);
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                clickHelper.onTouchEvent(this, cancel);
+                super.dispatchTouchEvent(cancel);
+                cancel.recycle();
+                getParent().requestDisallowInterceptTouchEvent(true);
+                AndroidUtilities.cancelRunOnUIThread(restoreDrawSelector);
+                selectedTabPositionX.cancel();
+                selectedTabPositionOffsetX.cancel();
+                animatedLongSelectedViewOffsetX = 0;
+                setSkipDrawSelector(true);
+            }
+            if (draggingDock) {
+                final boolean end = ev.getActionMasked() == MotionEvent.ACTION_UP
+                        || ev.getActionMasked() == MotionEvent.ACTION_CANCEL;
+                checkLongMove(ev.getX(), ev.getY(), false, end);
+                if (end) {
+                    if (ev.getActionMasked() == MotionEvent.ACTION_UP && lastLongSelectedView != null) {
+                        lastLongSelectedView.performClick();
+                    } else {
+                        setTabSelected(selectedOnTouchDown, true);
+                        selectedTabPositionX.animateToFinalPosition(getCenterX(selectedOnTouchDown));
+                    }
+                    draggingDock = false;
+                    lastLongSelectedView = null;
+                    animatorIsScaled.setValue(false, true);
+                    AndroidUtilities.runOnUIThread(restoreDrawSelector, 450);
+                }
+                invalidate();
+                return true;
+            }
+            if (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
                 animatorIsScaled.setValue(false, true);
             }
         }
