@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ReviewDemoTitle">ArkGram 演示</string>
+    <string name="ReviewDemoOffline">离线样例账号</string>
+    <string name="ReviewDemoEntry">体验离线演示 · +1 202-555-0100</string>
+    <string name="ReviewDemoInfo">这是本地演示，不会登录 Telegram。聊天、联系人和资料均为样例数据。设置页面使用真实应用设置，修改会应用于当前安装。网络聊天和通话需要登录 Telegram。</string>
+    <string name="ReviewDemoChatInfo">演示聊天：消息仅保留在此页面，离开后清空，不会发送至 Telegram。</string>
+    <string name="ReviewDemoContactOne">项目小组</string>
+    <string name="ReviewDemoContactTwo">设计笔记</string>
+    <string name="ReviewDemoContactThree">版本动态</string>
+    <string name="ReviewDemoMessageOne">欢迎体验 ArkGram。通过这些样例对话，无需手机验证码即可浏览界面。</string>
+    <string name="ReviewDemoMessageTwo">试试玻璃底栏、打开设置，或发送一条本地演示消息。</string>
+    <string name="ReviewDemoMessageThree">你的真实 Telegram 聊天和账号与此演示相互独立。</string>
+    <string name="ReviewDemoReply">我正在体验离线演示。</string>
+    <string name="ReviewDemoCompose">本地演示消息</string>
     <string name="FlexSettings">ArkGram</string>
     <string name="FlexSettingsInfo">自定义功能与快捷入口</string>
     <string name="FlexFeatures">功能</string>

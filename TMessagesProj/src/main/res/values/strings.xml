@@ -2,6 +2,19 @@
 <resources>
     <string name="AppName">ArkGram</string>
     <string name="AppNameBeta">ArkGram Beta</string>
+    <string name="ReviewDemoTitle">ArkGram Demo</string>
+    <string name="ReviewDemoOffline">Offline sample account</string>
+    <string name="ReviewDemoEntry">Try offline demo · +1 202-555-0100</string>
+    <string name="ReviewDemoInfo">This is a local demonstration, not a Telegram login. Chats, contacts and profile are sample data. The settings screens are the real app settings and changes apply to this installation. Sign in to Telegram to use network messaging and calls.</string>
+    <string name="ReviewDemoChatInfo">Demo chat. Messages stay on this screen and disappear when you leave. Nothing is sent to Telegram.</string>
+    <string name="ReviewDemoContactOne">Project team</string>
+    <string name="ReviewDemoContactTwo">Design notes</string>
+    <string name="ReviewDemoContactThree">Release updates</string>
+    <string name="ReviewDemoMessageOne">Welcome to ArkGram. These sample conversations let you explore the interface without a phone verification code.</string>
+    <string name="ReviewDemoMessageTwo">Try the glass navigation dock, open the settings, or type a local demo message.</string>
+    <string name="ReviewDemoMessageThree">Your real Telegram chats and account are separate from this demonstration.</string>
+    <string name="ReviewDemoReply">I am exploring the offline demo.</string>
+    <string name="ReviewDemoCompose">Local demo message</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>

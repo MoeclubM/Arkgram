@@ -2392,6 +2392,20 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return false;
             });
 
+            if (activityMode == MODE_LOGIN) {
+                TextView demo = new TextView(context);
+                demo.setText(getString(R.string.ReviewDemoEntry));
+                demo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                demo.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+                demo.setGravity(Gravity.CENTER);
+                demo.setPadding(dp(16), dp(12), dp(16), dp(12));
+                demo.setOnClickListener(v -> {
+                    AndroidUtilities.hideKeyboard(phoneField);
+                    presentFragment(new ReviewDemoActivity());
+                });
+                addView(demo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
+
             int bottomMargin = 72;
 
             final boolean allowTestBackend = (BuildVars.DEBUG_VERSION || TEST_BACKEND_IN_STORE && !BuildConfig.BUNDLE) || getConnectionsManager().isTestBackend();
@@ -2777,6 +2791,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public void onNextPressed(String code) {
             if (getParentActivity() == null || nextPressed || isRequestingFirebaseSms) {
+                return;
+            }
+
+            if (activityMode == MODE_LOGIN && ReviewDemoActivity.PHONE.equals(
+                    PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText()))) {
+                AndroidUtilities.hideKeyboard(phoneField);
+                presentFragment(new ReviewDemoActivity());
                 return;
             }
 
