@@ -43,9 +43,17 @@ jobs:
         env:
           NODE_PATH: ${{ runner.temp }}/branding/node_modules
         run: python Tools/branding/verify_logo.py
+      - name: Render Play Store artwork
+        run: python Tools/branding/render_store_assets.py
       - name: Upload rendered animation previews
         uses: actions/upload-artifact@v7.0.1
         with:
           name: boat-logo-preview
           path: branding-preview/
+          if-no-files-found: error
+      - name: Upload Play Store artwork
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: play-store-assets
+          path: play-store-assets/
           if-no-files-found: error

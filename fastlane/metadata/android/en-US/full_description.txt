@@ -1,0 +1,15 @@
+ArkGram is an independent, unofficial messaging client that uses the Telegram API. It is not affiliated with, endorsed by or sponsored by Telegram.
+
+Keep conversations together
+Use your Telegram account for private chats, groups, channels and shared media. Switch between multiple accounts from one application.
+
+Choose your tools
+Configure translation, optional message filtering and interface preferences. Connect your own supported AI provider and model for translation and text tools. Requests to a custom provider use your own credentials and are subject to that provider's availability, pricing and terms.
+
+Explore before signing in
+The clearly labelled offline demo includes sample conversations, contacts and a local message composer. Demo messages are not sent to Telegram. Network messaging and calls require a real Telegram login. Demo settings use the real application settings.
+
+Your choices matter
+When you use an external translation or AI provider, selected content is sent to the provider you configure. Review its privacy terms before using it with personal information.
+
+ArkGram is open source. Source code and project information: https://github.com/MoeclubM/Arkgram
