@@ -66,21 +66,28 @@ public class FlexAiRequest {
                     String instruction = "Summarize the supplied message accurately and concisely. Preserve its important facts. Return only the summary.";
                     if (!TextUtils.isEmpty(req.to_lang)) instruction += " Write in " + req.to_lang + ".";
                     if (!TextUtils.isEmpty(req.tone)) instruction += " Tone: " + req.tone + ".";
-                    requestText(instruction, messageText(loadMessage(req.peer, req.id)).text, (text, error) -> finish(error == null ? entities(text) : null, error));
+                    requestText(instruction, messageText(loadMessage(req.peer, req.id)).text, (text, error) -> finish(error == null ? entities(text, true) : null, error));
                 } else if (method instanceof TLRPC.TL_messages_composeMessageWithAI) {
                     TLRPC.TL_messages_composeMessageWithAI req = (TLRPC.TL_messages_composeMessageWithAI) method;
-                    requestText(composePrompt(req.proofread, req.emojify, req.translate_to_lang, req.tone), req.text.text, (text, error) -> {
+                    String instruction = composePrompt(req.proofread, req.emojify, req.translate_to_lang, req.tone);
+                    Utilities.Callback2<TLRPC.TL_textWithEntities, String> done = (text, error) -> {
                         TLRPC.TL_composedMessageWithAI result = new TLRPC.TL_composedMessageWithAI();
-                        if (error == null) result.result_text = entities(text);
+                        result.result_text = text;
                         finish(error == null ? result : null, error);
-                    });
+                    };
+                    if (req.text.entities.isEmpty()) {
+                        requestText(instruction, req.text.text, (text, error) -> done.run(error == null ? entities(text, true) : null, error));
+                    } else {
+                        transformRich(RichMessageConvert.fromCharSequence(MessageObject.formatTextWithEntities(req.text)), instruction, null, (rich, error) ->
+                            done.run(error == null ? entities(RichMessageConvert.toCharSequence(rich), false) : null, error));
+                    }
                 } else {
                     TLRPC.TL_messages_composeRichMessageWithAI req = (TLRPC.TL_messages_composeRichMessageWithAI) method;
                     String instruction = composePrompt(req.proofread, req.emojify, req.translate_to_lang, req.tone);
                     if (req.text == null) {
                         requestText(instruction + " Generate the requested content using Markdown. Return only the content.", "", (text, error) -> {
                             TLRPC.TL_composedRichMessageWithAI result = new TLRPC.TL_composedRichMessageWithAI();
-                            if (error == null) result.result = RichMessageConvert.fromCharSequence(MessageObject.formatTextWithEntities(entities(text)));
+                            if (error == null) result.result = RichMessageConvert.fromCharSequence(MessageObject.formatTextWithEntities(entities(text, true)));
                             finish(error == null ? result : null, error);
                         });
                     } else {
@@ -111,10 +118,10 @@ public class FlexAiRequest {
         return text;
     }
 
-    private TLRPC.TL_textWithEntities entities(String text) {
+    private TLRPC.TL_textWithEntities entities(CharSequence text, boolean markdown) {
         CharSequence[] value = {text};
         TLRPC.TL_textWithEntities result = new TLRPC.TL_textWithEntities();
-        result.entities = MediaDataController.getInstance(account).getEntities(value, true, true);
+        result.entities = MediaDataController.getInstance(account).getEntities(value, true, markdown);
         result.text = value[0].toString();
         return result;
     }
@@ -146,10 +153,7 @@ public class FlexAiRequest {
                 transformRich(rich, FlexConfig.getLlmPrompt() + " Target language: " + language + ".", language, (translated, error) -> {
                     if (error != null) finish(null, error);
                     else {
-                        CharSequence[] formatted = {RichMessageConvert.toCharSequence(translated)};
-                        TLRPC.TL_textWithEntities value = new TLRPC.TL_textWithEntities();
-                        value.entities = MediaDataController.getInstance(account).getEntities(formatted, true, false);
-                        value.text = formatted[0].toString();
+                        TLRPC.TL_textWithEntities value = entities(RichMessageConvert.toCharSequence(translated), false);
                         result.result.add(TranslateAlert2.preprocess(source, value));
                         translate(texts, language, index + 1, result);
                     }

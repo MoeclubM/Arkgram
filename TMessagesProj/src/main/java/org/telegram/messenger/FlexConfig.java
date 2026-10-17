@@ -164,10 +164,6 @@ public class FlexConfig {
         return getDownloadSpeedBoost() != BOOST_NONE;
     }
 
-    public static void setEnhancedFileLoaderEnabled(boolean value) {
-        setDownloadSpeedBoost(value ? BOOST_AVERAGE : BOOST_NONE);
-    }
-
     public static boolean isWebRtcDisabled() {
         return prefs().getBoolean("flex_disable_webrtc", false);
     }
@@ -497,10 +493,6 @@ public class FlexConfig {
             throw new IllegalArgumentException("Unknown translation provider: " + value);
         }
         prefs().edit().putInt("flex_translation_provider", value).apply();
-    }
-
-    public static boolean isTelegramTranslatePreferred() {
-        return getTranslationProvider() == TRANSLATION_PROVIDER_TELEGRAM;
     }
 
     public static boolean usesExternalTranslationProvider() {

@@ -149,10 +149,6 @@ public class FlexLlmHelper {
         };
     }
 
-    public static void requestModels(String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
-        requestModels(FlexConfig.LLM_API_TYPE_CHAT_COMPLETIONS, apiUrl, apiKey, done);
-    }
-
     public static void requestModels(int apiType, String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
         if (done == null) {
             return;
