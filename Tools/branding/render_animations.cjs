@@ -21,15 +21,15 @@ const { chromium } = require('playwright');
             assert.equal(data.op, 74);
             assert.deepEqual(data.assets, []);
             await page.evaluate(data => new Promise(resolve => {
-                if (window.animation) window.animation.destroy();
+                lottie.destroy();
                 const container = document.getElementById('animation');
                 container.style.width = container.style.height = '512px';
-                window.animation = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, animationData: data });
-                window.animation.addEventListener('DOMLoaded', resolve);
+                window.logoAnimation = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, animationData: data });
+                window.logoAnimation.addEventListener('DOMLoaded', resolve);
             }), data);
             const snapshots = [];
             for (const frame of [0, 27, 53]) {
-                await page.evaluate(frame => window.animation.goToAndStop(frame, true), frame);
+                await page.evaluate(frame => window.logoAnimation.goToAndStop(frame, true), frame);
                 snapshots.push(await page.locator('#animation').screenshot({ path: path.join(output, `${name}-${frame}.png`), omitBackground: true }));
             }
             assert.notDeepEqual(snapshots[0], snapshots[1], `${name} must animate`);
@@ -37,18 +37,18 @@ const { chromium } = require('playwright');
             await page.evaluate(() => {
                 const container = document.getElementById('animation');
                 container.style.width = container.style.height = '1024px';
-                window.animation.resize();
-                window.animation.goToAndStop(27, true);
+                window.logoAnimation.resize();
+                window.logoAnimation.goToAndStop(27, true);
             });
             await page.locator('#animation').screenshot({ path: path.join(output, `${name}-1024.png`), omitBackground: true });
             if (name === 'qr_code_logo') {
                 await page.evaluate(() => {
                     const container = document.getElementById('animation');
                     container.style.width = container.style.height = '512px';
-                    window.animation.resize();
+                    window.logoAnimation.resize();
                 });
                 for (let frame = 0; frame < data.op - data.ip; frame++) {
-                    await page.evaluate(frame => window.animation.goToAndStop(frame, true), frame);
+                    await page.evaluate(frame => window.logoAnimation.goToAndStop(frame, true), frame);
                     await page.locator('#animation').screenshot({ path: path.join(output, `frame-${String(frame).padStart(2, '0')}.png`), omitBackground: true });
                 }
             }
