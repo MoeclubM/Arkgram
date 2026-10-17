@@ -71,6 +71,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private int colorSelectedText;
     private int colorDefault;
     private boolean usePremiumCounter;
+    private boolean navigationDock;
 
     private TabAnimation tabAnimation;
     private TLRPC.TL_attachMenuBot tabAnimationBot;
@@ -103,6 +104,23 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         counter.setTextSize(dp(10));
     }
 
+    public void setNavigationDockStyle() {
+        navigationDock = true;
+        skipDrawSelector = true;
+        imageView.clearAnimationDrawable();
+        lastIconAnimationRaw = 0;
+        checkPlayAnimation(false);
+        imageView.setLayoutParams(LayoutHelper.createFrame(28, 28, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 4, 0, 0));
+        textView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
+                Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 35, 0, 0));
+        textView.setPadding(dp(4), 0, dp(4), 0);
+        setTextSizeDp(11f);
+        if (backupImageView != null) {
+            backupImageView.setRoundRadius(dp(13));
+            backupImageView.setLayoutParams(LayoutHelper.createFrame(26, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 5, 0, 0));
+        }
+    }
+
     private boolean hasVisualWidth;
     private float visualWidth;
     public void setVisualWidth(float width) {
@@ -125,6 +143,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             final float offset = (visualWidth - getMeasuredWidth()) / 2f;
             imageView.setTranslationX(offset);
             textView.setTranslationX(offset);
+            if (backupImageView != null) {
+                backupImageView.setTranslationX(offset);
+            }
         }
     }
 
@@ -176,8 +197,8 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             canvas.save();
 
             final float gap = dpf2(1.33f);
-            final float cx = viewWidth / 2f + dpf2(11);
-            final float cy = dpf2(10);
+            final float cx = viewWidth / 2f + dpf2(navigationDock ? 13 : 11);
+            final float cy = dpf2(navigationDock ? 12 : 10);
             final float height = dpf2(16);
             final float width = Math.max(height, counter.getCurrentWidth() + dp(8));
             final float rOuter = dpf2(9.333f);
@@ -234,7 +255,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         isSelectedAnimator.setValue(selected, animated);
         checkPlayAnimation(animated);
 
-        textView.setTypeface(selected ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
+        textView.setTypeface(selected && !navigationDock ? AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD) : AndroidUtilities.bold());
     }
 
     public boolean isTabSelected() {
@@ -318,12 +339,13 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
         final int animationToSet = isSelected ?
             tabAnimation.iconToFilled : tabAnimation.iconToOutline;
+        final int iconSize = navigationDock ? 28 : 24;
 
         if (tabAnimation.endFrameMid != -1) {
             boolean update = lastIsSelected != isSelected;
             if (lastIconAnimationRaw != animationToSet) {
                 lastIconAnimationRaw = animationToSet;
-                imageView.setAnimation(animationToSet, 24, 24);
+                imageView.setAnimation(animationToSet, iconSize, iconSize);
                 update = true;
             }
 
@@ -361,7 +383,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             if (lastIconAnimationRaw != animationToSet) {
                 lastIconAnimationRaw = animationToSet;
 
-                imageView.setAnimation(animationToSet, 24, 24);
+                imageView.setAnimation(animationToSet, iconSize, iconSize);
                 imageView.getAnimatedDrawable().setPlayInDirectionOfCustomEndFrame(false);
                 if (animated) {
                     imageView.getAnimatedDrawable().setCurrentFrame(0);
@@ -374,7 +396,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
 
         if (imageView.getAnimatedDrawable() == null) {
-            imageView.setAnimation(tabAnimation.iconToFilled, 24, 24);
+            imageView.setAnimation(tabAnimation.iconToFilled, iconSize, iconSize);
         }
 
         final RLottieDrawable drawable = imageView.getAnimatedDrawable();
@@ -413,6 +435,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     public static GlassTabView createAvatar(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, @StringRes int stringRes) {
         GlassTabView tab = new GlassTabView(context);
+        tab.resourcesProvider = resourcesProvider;
         tab.textView.setText(LocaleController.getString(stringRes));
         tab.imageView.setVisibility(GONE);
 

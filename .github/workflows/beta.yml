@@ -75,11 +75,15 @@ jobs:
           test -n "${release_alias}"
           echo "ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS=${release_alias}" >> "$GITHUB_ENV"
 
-      - name: Build beta APKs and AABs
+      - name: Compile Java and Android resources
         shell: bash
         run: |
           chmod +x gradlew
           ./gradlew :TMessagesProj:compileBetaJavaWithJavac --build-cache --configuration-cache --stacktrace
+
+      - name: Build beta APKs and AABs
+        shell: bash
+        run: |
           ./gradlew \
             :TMessagesProj_App:assembleAfatBeta \
             :TMessagesProj_App:bundleBundleAfatBeta \

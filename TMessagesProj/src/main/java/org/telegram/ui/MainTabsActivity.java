@@ -321,9 +321,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabletLayout = false;
 
         tabsView = new MainTabsLayout(context, resourceProvider);
+        tabsView.setNavigationDock();
         tabsView.setClipChildren(false);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
-        tabsView.setMaxWidth(dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
+        tabsView.setMaxWidth(dp(360 + DialogsActivity.MAIN_TABS_MARGIN * 2));
 
         tabs = new GlassTabView[5];
         tabs[INDEX_CHATS] = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CHATS, R.string.MainTabsChats);
@@ -343,6 +344,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         for (int index = 0; index < tabs.length; index++) {
             final GlassTabView view = tabs[index];
+            view.setNavigationDockStyle();
 
             final int position = indexToPosition(index);
             tabs[index].setOnClickListener(v -> {
@@ -394,8 +396,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
 
         tabsViewWrapper = new FrameLayout(context);
-        tabsViewWrapper.setOnClickListener(v -> {});
-        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        final int sideMargin = 21 - DialogsActivity.MAIN_TABS_MARGIN;
+        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,
+                DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL,
+                sideMargin, 0, sideMargin, 0));
         tabsViewWrapper.setClipToPadding(false);
         contentView.addView(tabsViewWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
@@ -852,6 +856,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     public GlassTabView[] tabs;
 
     public void selectTab(int position, boolean animated) {
+        tabsView.setSelectedPosition(position, animated);
         for (int a = 0; a < tabs.length; a++) {
             GlassTabView tab = tabs[a];
             tab.setSelected(indexToPosition(a) == position, animated);
@@ -864,7 +869,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             final float visibility = Math.max(0, 1f - Math.abs(position - animatedPosition));
             tabs[index].setGestureSelectedOverride(visibility, allow);
         }
-        tabsView.invalidate();
+        tabsView.setGestureSelectedPosition(animatedPosition, allow);
     }
 
     public void openTab(int position) {
@@ -1104,8 +1109,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final float scale = lerp(0.85f, 1f, factor);
 
         tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
-        tabsView.setClickable(factor > 1);
-        tabsView.setEnabled(factor > 1);
+        tabsView.setClickable(factor > 0);
+        tabsView.setEnabled(factor > 0);
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
     }

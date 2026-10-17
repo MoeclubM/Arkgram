@@ -22,6 +22,7 @@ import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedLinearLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.glass.GlassTabView;
@@ -47,6 +48,29 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private static final int[] PASS_PADDINGS_DP = {16, 8, 4};
 
     private int maxWidthPx;
+    private boolean navigationDock;
+    private float selectedPosition;
+    private float gestureSelectedPosition;
+    private boolean gestureSelection;
+    private final AnimatedFloat animatedSelectedPosition = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+    public void setNavigationDock() {
+        navigationDock = true;
+    }
+
+    public void setSelectedPosition(float position, boolean animated) {
+        selectedPosition = position;
+        if (!animated) {
+            animatedSelectedPosition.force(position);
+        }
+        invalidate();
+    }
+
+    public void setGestureSelectedPosition(float position, boolean allow) {
+        gestureSelectedPosition = position;
+        gestureSelection = allow;
+        invalidate();
+    }
 
     public void setMaxWidth(int maxWidthPx) {
         if (this.maxWidthPx != maxWidthPx) {
@@ -66,6 +90,28 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
 
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
+        if (navigationDock) {
+            measureTabTexts(11f);
+            int index = 0;
+            int left = 0;
+            for (int a = 0, count = getChildCount(); a < count; a++) {
+                final GlassTabView child = (GlassTabView) getChildAt(a);
+                tabsLeftPos[a] = left;
+                tabsWidth[a] = 0;
+                if (isViewVisible(child)) {
+                    final int right = Math.round(maxTotalWidthForTabs * (index + 1f) / visibleChildCount);
+                    tabsWidth[a] = right - left;
+                    left = right;
+                    index++;
+                }
+                child.setTextSizeDp(11f);
+                child.measure(MeasureSpec.makeMeasureSpec(tabsWidth[a], MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(tabHeight, MeasureSpec.EXACTLY));
+            }
+            setMeasuredDimension(width, height);
+            calculateTotalSizesAfterMeasure();
+            return;
+        }
         final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
 
         int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
@@ -286,7 +332,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private void setSkipDrawSelector(boolean skipDrawSelector) {
         drawCustomSelector = skipDrawSelector;
         if (drawCustomSelector) {
-            selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.09f));
+            selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), navigationDock ? 0.12f : 0.09f));
         }
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
@@ -295,7 +341,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
 
             if (child instanceof GlassTabView) {
-                ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector);
+                ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector || navigationDock);
             }
         }
         invalidate();
@@ -309,6 +355,28 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
+        final float position = animatedSelectedPosition.set(
+                gestureSelection ? gestureSelectedPosition : selectedPosition, gestureSelection);
+        if (navigationDock && !drawCustomSelector) {
+            float centerX = 0;
+            float width = 0;
+            int index = 0;
+            for (int a = 0, count = getChildCount(); a < count; a++) {
+                final View child = getChildAt(a);
+                if (!isViewVisible(child)) {
+                    continue;
+                }
+                final float weight = Math.max(0, 1f - Math.abs(index - position));
+                centerX += (child.getX() + child.getWidth() / 2f) * weight;
+                width += child.getWidth() * weight;
+                index++;
+            }
+            final float height = getHeight() - getPaddingTop() - getPaddingBottom();
+            selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.12f));
+            canvas.drawRoundRect(centerX - width / 2f, getPaddingTop(),
+                    centerX + width / 2f, getHeight() - getPaddingBottom(),
+                    height / 2f, height / 2f, selectorPaint);
+        }
         if (drawCustomSelector) {
             final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
             final float sWidth = getInterpolatedWidthByX(x, this);
@@ -605,6 +673,14 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (navigationDock) {
+            if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                checkPivot(this, ev.getX(), ev.getY());
+                animatorIsScaled.setValue(true, true);
+            } else if (ev.getActionMasked() == MotionEvent.ACTION_UP || ev.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                animatorIsScaled.setValue(false, true);
+            }
+        }
         clickHelper.onTouchEvent(this, ev);
         return super.dispatchTouchEvent(ev);
     }
