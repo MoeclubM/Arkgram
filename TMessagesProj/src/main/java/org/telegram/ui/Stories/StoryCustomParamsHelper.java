@@ -19,6 +19,7 @@ public class StoryCustomParamsHelper {
         toStory.detectedLng = fromStory.detectedLng;
         toStory.translatedText = fromStory.translatedText;
         toStory.translatedLng = fromStory.translatedLng;
+        toStory.flexTranslationServiceKey = fromStory.flexTranslationServiceKey;
     }
 
     public static void readLocalParams(TL_stories.StoryItem storyItem, NativeByteBuffer byteBuffer) {
@@ -64,6 +65,7 @@ public class StoryCustomParamsHelper {
             flags += storyItem.detectedLng != null ? 2 : 0;
             flags += storyItem.translatedText != null ? 4 : 0;
             flags += storyItem.translatedLng != null ? 8 : 0;
+            flags = setFlag(flags, FLAG_30, storyItem.flexTranslationServiceKey != null);
         }
 
         @Override
@@ -79,6 +81,7 @@ public class StoryCustomParamsHelper {
             if ((flags & 8) != 0) {
                 stream.writeString(storyItem.translatedLng);
             }
+            if (hasFlag(flags, FLAG_30)) stream.writeString(storyItem.flexTranslationServiceKey);
         }
 
         @Override
@@ -94,6 +97,7 @@ public class StoryCustomParamsHelper {
             if ((flags & 8) != 0) {
                 storyItem.translatedLng = stream.readString(exception);
             }
+            if (hasFlag(flags, FLAG_30)) storyItem.flexTranslationServiceKey = stream.readString(exception);
         }
     }
 }
