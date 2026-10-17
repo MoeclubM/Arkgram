@@ -1,5 +1,6 @@
 """CI-only verification of density coverage, reproducibility and rendered motion."""
 from pathlib import Path
+import os
 import subprocess
 
 from PIL import Image
@@ -38,6 +39,12 @@ for density, scale in render_logo.SCALE.items():
             assert alpha.getextrema() == (0, 255), f"Lost transparency or artwork: {p}"
             assert len(alpha.getcolors(256)) > 2, f"Missing antialiasing: {p}"
 
+compiler = Path(os.environ["ANDROID_HOME"]) / "build-tools/36.0.0/aapt2"
+for root, name in ((res, "app"), (standalone, "standalone")):
+    files = [str(p) for p in pngs + vectors if p.is_relative_to(root)]
+    compiled = Path(os.environ["RUNNER_TEMP"]) / f"boat-logo-{name}.zip"
+    subprocess.run([str(compiler), "compile", "-o", str(compiled), *files], check=True)
+
 output = Path("branding-preview")
 subprocess.run(["node", str(Path(__file__).with_name("render_animations.cjs")), str(output)], check=True)
 for p in output.glob("*.png"):
@@ -51,4 +58,4 @@ frames = [Image.open(output / f"frame-{frame:02}.png").convert("RGBA") for frame
 frames[0].save(output / "boat-animation.webp", save_all=True, append_images=frames[1:],
                duration=[round((i + 1) * 1000 / 60) - round(i * 1000 / 60) for i in range(54)],
                lossless=True, loop=0)
-print(f"Verified {len(pngs)} PNG assets, {len(vectors)} vectors, all densities and three 60fps animations at 512/1024px.")
+print(f"Verified and compiled {len(pngs)} PNG assets, {len(vectors)} vectors, all densities and three 60fps animations at 512/1024px.")

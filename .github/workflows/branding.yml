@@ -39,15 +39,10 @@ jobs:
           python -m pip install Pillow==12.3.0
           npm install --prefix "$RUNNER_TEMP/branding" lottie-web@5.13.0 playwright@1.56.1
           "$RUNNER_TEMP/branding/node_modules/.bin/playwright" install --with-deps chromium
-      - name: Verify generated assets and render animations
+      - name: Verify and compile logo assets and render animations
         env:
           NODE_PATH: ${{ runner.temp }}/branding/node_modules
         run: python Tools/branding/verify_logo.py
-      - name: Compile Android resources
-        run: |
-          mkdir -p "$RUNNER_TEMP/branding-resources"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt2" compile --dir TMessagesProj/src/main/res -o "$RUNNER_TEMP/branding-resources/app.zip"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt2" compile --dir TMessagesProj_AppStandalone/src/main/res -o "$RUNNER_TEMP/branding-resources/standalone.zip"
       - name: Upload rendered animation previews
         uses: actions/upload-artifact@v7.0.1
         with:

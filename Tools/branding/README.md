@@ -23,7 +23,8 @@ rocking motion. The intro keeps its existing OpenGL mesh and animation.
 The **ArkGram Logo Assets** GitHub Actions workflow checks regeneration against
 committed assets, density dimensions, transparency and antialiasing. It renders
 all three animations with Lottie at 512px and 1024px and checks for changing,
-nonempty frames. Android's AAPT2 compiler also compiles the app and standalone
-resource directories. Its `boat-logo-preview` artifact includes screenshots and a
+nonempty frames. Android's AAPT2 compiler also compiles every checked logo resource
+from the app and standalone builds. Full application builds use the existing beta
+workflow. Its `boat-logo-preview` artifact includes screenshots and a
 lossless animated WebP with the original 60fps timeline. Verification runs in CI;
 do not run `verify_logo.py`, browser checks, Android builds or tests locally.
