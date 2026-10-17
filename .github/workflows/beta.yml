@@ -57,7 +57,8 @@ jobs:
         shell: bash
         run: |
           base_version="$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          base_code="$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((base_code + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${base_version}-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
@@ -79,7 +80,10 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj:compileBetaJavaWithJavac --build-cache --configuration-cache --stacktrace
+          ./gradlew :TMessagesProj:compileBetaJavaWithJavac \
+            -PAPP_VERSION_CODE="$ORG_GRADLE_PROJECT_APP_VERSION_CODE" \
+            -PAPP_VERSION_NAME="$ORG_GRADLE_PROJECT_APP_VERSION_NAME" \
+            --build-cache --configuration-cache --stacktrace
 
       - name: Build beta APKs and AABs
         shell: bash
@@ -89,7 +93,25 @@ jobs:
             :TMessagesProj_App:bundleBundleAfatBeta \
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
             :TMessagesProj_AppStandalone:bundleAfatStandalone \
+            -PAPP_VERSION_CODE="$ORG_GRADLE_PROJECT_APP_VERSION_CODE" \
+            -PAPP_VERSION_NAME="$ORG_GRADLE_PROJECT_APP_VERSION_NAME" \
             --build-cache --configuration-cache --stacktrace
+
+      - name: Verify packaged beta versions
+        shell: bash
+        run: |
+          base_package="$(sed -n 's/^APP_PACKAGE=//p' gradle.properties)"
+          for apk in TMessagesProj_App/build/outputs/apk/afat/beta/*.apk TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk; do
+            case "$apk" in
+              TMessagesProj_App/*) expected_package="${base_package}.beta" ;;
+              TMessagesProj_AppStandalone/*) expected_package="${base_package}.web" ;;
+            esac
+            package_info="$("$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" | sed -n '1p')"
+            echo "$apk: $package_info"
+            [[ "$package_info" == *"name='${expected_package}'"* ]]
+            [[ "$package_info" == *"versionName='${ORG_GRADLE_PROJECT_APP_VERSION_NAME}'"* ]]
+            [[ "$package_info" == *"versionCode='$((ORG_GRADLE_PROJECT_APP_VERSION_CODE * 10 + 9))'"* ]]
+          done
 
       - name: Upload app beta APK
         uses: actions/upload-artifact@v7.0.1

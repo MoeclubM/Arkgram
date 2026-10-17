@@ -1796,7 +1796,8 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
         float dx = sinf(tt) * 75;
         float dy = sinf(time_local * (float) M_PI * 2.0f * 0.8f) * 3.0f;
 
-        telegram_plane.params.position = xyzMake(dx - 7, dy + 7, 0);
+        // The boat texture is centered; the original paper plane needed a (-7, 7) offset.
+        telegram_plane.params.position = xyzMake(dx, dy, 0);
         telegram_plane.params.rotation = sinf(time_local * (float) M_PI * 2.0f * 0.8f + 0.35f) * 2.5f;
         telegram_plane.params.scale = xyzMake(1.3f, 1.3f, 1);
 
@@ -2171,7 +2172,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             float tt = MINf(0, (float) (-M_PI * 125.0f / 180.0f + time * M_PI * 2 * 1.5f));
             float dx = t(-90, 0, 0, 0.22f, EaseIn);
             float dy = sinf(time_local * (float) M_PI * 2.0f * 0.8f) * 3.0f;
-            telegram_plane.params.position = xyzMake(dx - 7, dy + 7, 0);
+            telegram_plane.params.position = xyzMake(dx, dy, 0);
             telegram_plane.params.rotation = sinf(time_local * (float) M_PI * 2.0f * 0.8f + 0.35f) * 2.5f;
             float scale = t(0.13f, 1.3f, 0.03f, 0.22f, EaseOut);
             telegram_plane.params.scale = xyzMake(scale, scale, 1);
@@ -2193,7 +2194,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             float dx = t(0, 90, 0, 0.22f, EaseOut);
             float dy = sinf(time_local * (float) M_PI * 2.0f * 0.8f) * 3.0f;
 
-            telegram_plane.params.position = xyzMake(dx - 7, dy + 7, 0);
+            telegram_plane.params.position = xyzMake(dx, dy, 0);
             telegram_plane.params.rotation = sinf(time_local * (float) M_PI * 2.0f * 0.8f + 0.35f) * 2.5f;
 
             float scale = t(1.3f, 0.13f, 0.03f, 0.22f, EaseOut);
