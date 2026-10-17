@@ -8,7 +8,9 @@ import render_logo
 
 output = Path("play-store-assets")
 output.mkdir(exist_ok=True)
-render_logo.render_launcher(512).convert("RGB").save(output / "icon.png")
+icon = Image.new("RGBA", (512, 512), render_logo.CREAM)
+icon.alpha_composite(render_logo.render_transparent(512, 512, render_logo.INK, fill_frac=0.52))
+icon.convert("RGB").save(output / "icon.png")
 graphic = Image.new("RGB", (4096, 2000), render_logo.CREAM[:3])
 draw = ImageDraw.Draw(graphic)
 render_logo.draw_boat(draw, 720, 1000, 840 / 0.92, render_logo.INK[:3])

@@ -1,0 +1,10 @@
+Offline demo access
+
+1. On the welcome screen, select Start Messaging.
+2. On the phone number screen, select "Try offline demo". Alternatively, enter country code +1 and phone number 2025550100, then continue.
+3. No password, SMS code or Telegram account is required for the offline demo.
+4. Explore Chats, Contacts, Settings and Profile. Open a sample conversation and send a local demonstration message.
+
+The demo is explicitly labelled. Its chats, contacts and profile contain local sample data. Demo messages are never sent to Telegram and disappear when the conversation screen is closed. Settings screens use the real application settings.
+
+The offline demo does not provide Telegram network messaging or calls. Those functions require a real Telegram login. Full review access must be validated before submitting the App access declaration; these demo instructions alone do not establish access to every network feature.
