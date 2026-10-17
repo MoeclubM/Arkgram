@@ -1544,7 +1544,8 @@ public class TL_stories {
         public int messageType;//custom
         public int fileReference;
         public String detectedLng; //custom
-        public String translatedLng; //custom
+        public String translatedLng;
+        public String flexTranslationServiceKey; // Local caption cache provenance. //custom
         public boolean translated; //custom
         public TLRPC.TL_textWithEntities translatedText; //custom
         public StoryPrivacyBottomSheet.StoryPrivacy parsedPrivacy; //custom

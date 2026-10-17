@@ -55,6 +55,7 @@ import org.telegram.messenger.CodeHighlighting;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
@@ -1229,11 +1230,18 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
     }
 
     private int requestId = -1;
+    private String requestServiceKey;
 
     private boolean loading;
     private TLRPC.TL_messages_composeMessageWithAI[] lastRequest = new TLRPC.TL_messages_composeMessageWithAI[3];
     private TLRPC.TL_messages_composeRichMessageWithAI[] lastRequestRich = new TLRPC.TL_messages_composeRichMessageWithAI[3];
     private void request() {
+        String service = FlexConfig.getTextServiceKey(true);
+        if (!TextUtils.equals(service, requestServiceKey)) {
+            java.util.Arrays.fill(lastRequest, null);
+            java.util.Arrays.fill(lastRequestRich, null);
+            requestServiceKey = service;
+        }
         if (isRich()) {
             requestRich();
             return;

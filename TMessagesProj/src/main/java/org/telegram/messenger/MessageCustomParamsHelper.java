@@ -53,6 +53,8 @@ public class MessageCustomParamsHelper {
         toMessage.summaryText = fromMessage.summaryText;
         toMessage.translatedSummaryText = fromMessage.translatedSummaryText;
         toMessage.translatedSummaryLanguage = fromMessage.translatedSummaryLanguage;
+        toMessage.flexTranslationServiceKey = fromMessage.flexTranslationServiceKey;
+        toMessage.flexSummaryServiceKey = fromMessage.flexSummaryServiceKey;
     }
 
 
@@ -114,6 +116,9 @@ public class MessageCustomParamsHelper {
             flags = setFlag(flags, FLAG_12, message.translatedSummaryLanguage != null);
 
             flags = setFlag(flags, FLAG_13, message.translatedRichMessage != null);
+            // High bits are local ArkGram metadata, appended after Telegram fields.
+            flags = setFlag(flags, FLAG_30, message.flexTranslationServiceKey != null);
+            flags = setFlag(flags, FLAG_31, message.flexSummaryServiceKey != null);
         }
 
         @Override
@@ -166,6 +171,8 @@ public class MessageCustomParamsHelper {
             if (hasFlag(flags, FLAG_13)) {
                 message.translatedRichMessage.serializeToStream(stream);
             }
+            if (hasFlag(flags, FLAG_30)) stream.writeString(message.flexTranslationServiceKey);
+            if (hasFlag(flags, FLAG_31)) stream.writeString(message.flexSummaryServiceKey);
         }
 
         @Override
@@ -216,6 +223,8 @@ public class MessageCustomParamsHelper {
             if (hasFlag(flags, FLAG_13)) {
                 message.translatedRichMessage = TL_iv.RichMessage.TLdeserialize(stream, stream.readInt32(exception), exception);
             }
+            if (hasFlag(flags, FLAG_30)) message.flexTranslationServiceKey = stream.readString(exception);
+            if (hasFlag(flags, FLAG_31)) message.flexSummaryServiceKey = stream.readString(exception);
         }
 
     }

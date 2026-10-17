@@ -57498,6 +57498,8 @@ public class TLRPC {
         public boolean premiumEffectWasPlayed; //custom
         public String originalLanguage; //custom
         public String translatedToLanguage; //custom
+        public String flexTranslationServiceKey; // Local cache provenance, never sent to Telegram.
+        public String flexSummaryServiceKey;
         public TL_textWithEntities translatedText; //custom
         public TL_iv.RichMessage translatedRichMessage; //custom
         public TL_textWithEntities translatedVoiceTranscription; //custom

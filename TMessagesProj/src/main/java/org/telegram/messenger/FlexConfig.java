@@ -41,6 +41,36 @@ public class FlexConfig {
     public static final String DEFAULT_DEEPL_API_URL = "https://api-free.deepl.com/v2/translate";
     public static final String DEFAULT_TRANSLATION_LLM_PROMPT = "You are a professional translation engine. Translate the user's text into the requested target language. Return only the translated text. Preserve line breaks, markdown, URLs, mentions, hashtags, emoji, punctuation, and list structure. Do not add explanations.";
     public static final String DEFAULT_AI_SUMMARY_PROMPT = "You analyze group and channel discussions. Write a structured report in the requested output language based only on the provided messages and local statistics. Cover overview, main topics, hotspots, participant activity, timeline changes, decisions or action items, and unresolved questions. If the messages do not support a conclusion, state that explicitly.";
+    private static volatile String translationServiceKey;
+    private static volatile String officialAiServiceKey;
+    private static final SharedPreferences.OnSharedPreferenceChangeListener serviceSettingsListener = (preferences, key) -> {
+        synchronized (FlexConfig.class) {
+            if (key == null || key.startsWith("flex_translation_") || key.startsWith("flex_llm_provider_")) translationServiceKey = null;
+            if (key == null || key.startsWith("flex_official_ai_") || key.startsWith("flex_llm_provider_")) officialAiServiceKey = null;
+        }
+    };
+
+    static {
+        prefs().registerOnSharedPreferenceChangeListener(serviceSettingsListener);
+    }
+
+    public static synchronized String getTextServiceKey(boolean summary) {
+        String cached = summary ? officialAiServiceKey : translationServiceKey;
+        if (cached != null) return cached;
+        String ref = summary ? getOfficialAiModelRef() : getTranslationLlmModelRef();
+        int provider = summary ? (ref.isEmpty() ? TRANSLATION_PROVIDER_TELEGRAM : TRANSLATION_PROVIDER_LLM) : getTranslationProvider();
+        String value = "telegram";
+        if (provider == TRANSLATION_PROVIDER_LLM) {
+            int llmProvider = getLlmProviderFromRef(ref);
+            value = Utilities.MD5(ref + "\n" + getProviderApiType(llmProvider) + "\n" + getProviderApiUrl(llmProvider) + "\n" + (summary ? getOfficialAiPrompt() : getLlmPrompt()));
+        } else if (provider != TRANSLATION_PROVIDER_TELEGRAM) {
+            value = provider + ":" + (provider == TRANSLATION_PROVIDER_DEEPL ? getDeepLApiUrl() : "");
+        }
+        if (summary) officialAiServiceKey = value;
+        else translationServiceKey = value;
+        return value;
+    }
+
     private static SharedPreferences prefs() {
         return MessagesController.getGlobalMainSettings();
     }

@@ -664,6 +664,31 @@ public class TranslateController extends BaseController {
             return;
         }
 
+        String translationService = FlexConfig.getTextServiceKey(false);
+        String summaryService = FlexConfig.getTextServiceKey(true);
+        if (messageObject.messageOwner.flexTranslationServiceKey == null) messageObject.messageOwner.flexTranslationServiceKey = "telegram";
+        if (messageObject.messageOwner.flexSummaryServiceKey == null) messageObject.messageOwner.flexSummaryServiceKey = "telegram";
+        boolean changed = false;
+        if (!translationService.equals(messageObject.messageOwner.flexTranslationServiceKey)) {
+            messageObject.messageOwner.translatedText = null;
+            messageObject.messageOwner.translatedVoiceTranscription = null;
+            messageObject.messageOwner.translatedPoll = null;
+            messageObject.messageOwner.translatedRichMessage = null;
+            messageObject.messageOwner.translatedToLanguage = null;
+            messageObject.messageOwner.translatedSummaryText = null;
+            messageObject.messageOwner.translatedSummaryLanguage = null;
+            messageObject.messageOwner.flexTranslationServiceKey = translationService;
+            changed = true;
+        }
+        if (!summaryService.equals(messageObject.messageOwner.flexSummaryServiceKey)) {
+            messageObject.messageOwner.summaryText = null;
+            messageObject.messageOwner.translatedSummaryText = null;
+            messageObject.messageOwner.translatedSummaryLanguage = null;
+            messageObject.messageOwner.flexSummaryServiceKey = summaryService;
+            changed = true;
+        }
+        if (changed) messageObject.updateTranslation(false);
+
         final long dialogId = messageObject.getDialogId();
 
         if (onScreen && messageObject.messageOwner.summarizedOpen && messageObject.messageOwner.summaryText == null && !isTranslatingDialog(messageObject.getDialogId())) {
@@ -707,7 +732,8 @@ public class TranslateController extends BaseController {
                 messageObject.messageOwner.translatedPoll != null && !PollText.isFullyTranslated(messageObject, messageObject.messageOwner.translatedPoll) ||
                 !language.equals(messageObject.messageOwner.translatedToLanguage)
             ) &&
-            (potentialReplyMessageObject = findReplyMessageObject(dialogId, messageObject.getId())) != null
+            (potentialReplyMessageObject = findReplyMessageObject(dialogId, messageObject.getId())) != null &&
+            translationService.equals(potentialReplyMessageObject.messageOwner.flexTranslationServiceKey)
         ) {
             messageObject.messageOwner.translatedToLanguage = potentialReplyMessageObject.messageOwner.translatedToLanguage;
             messageObject.messageOwner.translatedText = potentialReplyMessageObject.messageOwner.translatedText;
@@ -1072,7 +1098,12 @@ public class TranslateController extends BaseController {
             req.flags |= TLObject.FLAG_0;
             req.to_lang = normalizeLanguage(language);
         }
+        final String service = FlexConfig.getTextServiceKey(true);
         ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+            if (!service.equals(FlexConfig.getTextServiceKey(true))) {
+                loadingSummarizations.remove(id);
+                return;
+            }
             if (res != null) {
                 loadingSummarizations.remove(id);
                 callback.run(res);
@@ -1199,6 +1230,7 @@ public class TranslateController extends BaseController {
                 }
                 req.to_lang = normalizeLanguage(pendingTranslation1.language);
 
+                final String service = FlexConfig.getTextServiceKey(false);
                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     final ArrayList<Integer> ids;
                     final ArrayList<Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String>> callbacks;
@@ -1209,6 +1241,12 @@ public class TranslateController extends BaseController {
                         callbacks = pendingTranslation1.callbacks;
                         texts = pendingTranslation1.messageTexts;
                         toLanguage = pendingTranslation1.language;
+                    }
+                    if (!service.equals(FlexConfig.getTextServiceKey(false))) {
+                        synchronized (TranslateController.this) {
+                            for (int messageId : ids) loadingTranslations.remove(messageId);
+                        }
+                        return;
                     }
                     if (res instanceof TLRPC.TL_messages_translateResult) {
                         ArrayList<TLRPC.TL_textWithEntities> translated = ((TLRPC.TL_messages_translateResult) res).result;
@@ -1443,6 +1481,7 @@ public class TranslateController extends BaseController {
                 }
                 req.to_lang = normalizeLanguage(pendingTranslation1.language);
 
+                final String service = FlexConfig.getTextServiceKey(false);
                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     final ArrayList<Integer> ids;
                     final ArrayList<Utilities.Callback3<Integer, PollText, String>> callbacks;
@@ -1451,6 +1490,12 @@ public class TranslateController extends BaseController {
                         ids = pendingTranslation1.messageIds;
                         callbacks = pendingTranslation1.callbacks;
                         texts = pendingTranslation1.messageTexts;
+                    }
+                    if (!service.equals(FlexConfig.getTextServiceKey(false))) {
+                        synchronized (TranslateController.this) {
+                            for (int messageId : ids) loadingTranslations.remove(messageId);
+                        }
+                        return;
                     }
                     if (res instanceof TLRPC.TL_messages_translateResult) {
                         final ArrayList<TLRPC.TL_textWithEntities> translated = ((TLRPC.TL_messages_translateResult) res).result;
@@ -1592,12 +1637,19 @@ public class TranslateController extends BaseController {
                 req.id = pendingTranslation1.messageIds;
                 req.to_lang = normalizeLanguage(pendingTranslation1.language);
 
+                final String service = FlexConfig.getTextServiceKey(false);
                 final int reqId = getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                     final ArrayList<Integer> ids;
                     final ArrayList<Utilities.Callback3<Integer, TL_iv.RichMessage, String>> callbacks;
                     synchronized (TranslateController.this) {
                         ids = pendingTranslation1.messageIds;
                         callbacks = pendingTranslation1.callbacks;
+                    }
+                    if (!service.equals(FlexConfig.getTextServiceKey(false))) {
+                        synchronized (TranslateController.this) {
+                            for (int messageId : ids) loadingTranslations.remove(messageId);
+                        }
+                        return;
                     }
                     if (res instanceof TLRPC.TL_messages_translatedRichMessage) {
                         final ArrayList<TL_iv.RichMessage> translated = ((TLRPC.TL_messages_translatedRichMessage) res).result;
@@ -1946,6 +1998,12 @@ public class TranslateController extends BaseController {
 
         final StoryKey key = new StoryKey(storyItem);
 
+        final String service = FlexConfig.getTextServiceKey(false);
+        if (!service.equals(storyItem.flexTranslationServiceKey)) {
+            storyItem.translatedText = null;
+            storyItem.translatedLng = null;
+            storyItem.flexTranslationServiceKey = service;
+        }
         String toLang = TranslateAlert2.getToLanguage();
 
         if (storyItem.translatedText != null && TextUtils.equals(storyItem.translatedLng, toLang)) {
@@ -1971,6 +2029,11 @@ public class TranslateController extends BaseController {
         req.text.add(text);
         req.to_lang = normalizeLanguage(toLang);
         getConnectionsManager().sendRequest(req, (res, err) -> {
+            if (!service.equals(FlexConfig.getTextServiceKey(false))) {
+                translatingStories.remove(key);
+                if (done != null) AndroidUtilities.runOnUIThread(done);
+                return;
+            }
             if (res instanceof TLRPC.TL_messages_translateResult) {
                 ArrayList<TLRPC.TL_textWithEntities> result = ((TLRPC.TL_messages_translateResult) res).result;
                 if (result.size() <= 0) {
@@ -2083,6 +2146,12 @@ public class TranslateController extends BaseController {
 
         final MessageKey key = new MessageKey(messageObject);
 
+        final String service = FlexConfig.getTextServiceKey(false);
+        if (!service.equals(messageObject.messageOwner.flexTranslationServiceKey)) {
+            messageObject.messageOwner.translatedText = null;
+            messageObject.messageOwner.translatedToLanguage = null;
+            messageObject.messageOwner.flexTranslationServiceKey = service;
+        }
         String toLang = TranslateAlert2.getToLanguage();
 
         if (messageObject.messageOwner.translatedText != null && TextUtils.equals(messageObject.messageOwner.translatedToLanguage, toLang)) {
@@ -2112,6 +2181,11 @@ public class TranslateController extends BaseController {
         req.to_lang = normalizeLanguage(toLang);
         final long start = System.currentTimeMillis();
         getConnectionsManager().sendRequest(req, (res, err) -> {
+            if (!service.equals(FlexConfig.getTextServiceKey(false))) {
+                translatingPhotos.remove(key);
+                if (done != null) AndroidUtilities.runOnUIThread(done);
+                return;
+            }
             if (res instanceof TLRPC.TL_messages_translateResult) {
                 ArrayList<TLRPC.TL_textWithEntities> result = ((TLRPC.TL_messages_translateResult) res).result;
                 if (result.size() <= 0) {

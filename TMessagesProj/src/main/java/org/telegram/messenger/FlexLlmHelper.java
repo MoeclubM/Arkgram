@@ -119,6 +119,7 @@ public class FlexLlmHelper {
                     if (!cancelled.get()) done.run(finalResult, null);
                 });
             } catch (Exception e) {
+                if (cancelled.get()) return;
                 try {
                     String errorResponseText = readConnectionText(connection, true);
                     if (!TextUtils.isEmpty(errorResponseText)) {

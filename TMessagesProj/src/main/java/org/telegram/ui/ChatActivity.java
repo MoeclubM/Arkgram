@@ -20672,7 +20672,6 @@ public class ChatActivity extends BaseFragment implements
                 }
                 forwardEndReached[a] = true;
             }
-            collapseBlockedMessages(messArr);
             clearOnLoadButIsNewTopic = false;
             hideForwardEndReached = false;
             hideActionMode();
@@ -21087,6 +21086,8 @@ public class ChatActivity extends BaseFragment implements
                 dropPhotoAction = action;
             }
         }
+        HashSet<MessageObject> blockedMessages = getFlexBlockedMessages(messArr);
+        boolean blockedMessagesCollapsed = false;
         for (int a = 0; a < messArr.size(); a++) {
             MessageObject obj = messArr.get(a);
             if (obj.replyMessageObject != null) {
@@ -21175,6 +21176,13 @@ public class ChatActivity extends BaseFragment implements
                 forwardEndReached[loadIndex] = true;
             }
 
+            // Keep paging/counts based on real messages, then collapse only their UI rows.
+            if (blockedMessages.contains(obj)) {
+                if (blockedMessagesCollapsed) continue;
+                obj = createFlexAdBlockCollapsedMessage(obj, blockedMessages.size());
+                messageId = obj.getId();
+                blockedMessagesCollapsed = true;
+            }
             TLRPC.MessageAction action = obj.messageOwner.action;
             if (obj.type < 0 || loadIndex == 1 && action instanceof TLRPC.TL_messageActionChatMigrateTo) {
                 continue;
@@ -25079,6 +25087,7 @@ public class ChatActivity extends BaseFragment implements
                 }
             }
         }
+        flexBlockedGroupIds.clear();
         clearChatData(true);
         botSponsoredMessage = null;
         sponsoredMessagesAdded = false;
@@ -25430,16 +25439,14 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    private final HashSet<Long> flexBlockedGroupIds = new HashSet<>();
     private int flexAdBlockCollapsedMessageId = -210410100;
     private Runnable updateStreamingTopic;
     private ArrayList<MessageObject> notPushedSponsoredMessages;
 
-    private boolean collapseBlockedMessages(ArrayList<MessageObject> arr) {
-        if (!FlexConfig.isAdBlockEnabled()) {
-            return false;
-        }
+    private HashSet<MessageObject> getFlexBlockedMessages(ArrayList<MessageObject> arr) {
         HashSet<MessageObject> blockedMessages = new HashSet<>();
-        HashSet<Long> blockedGroupIds = new HashSet<>();
+        if (!FlexConfig.isAdBlockEnabled()) return blockedMessages;
         for (int i = 0; i < arr.size(); ++i) {
             MessageObject messageObject = arr.get(i);
             if (messageObject.messageOwner != null && messageObject.messageOwner.local_id == FlexConfig.AD_BLOCK_COLLAPSED_LOCAL_ID) {
@@ -25448,16 +25455,24 @@ public class ChatActivity extends BaseFragment implements
             if (FlexConfig.isMessageBlocked(messageObject)) {
                 blockedMessages.add(messageObject);
                 if (messageObject.hasValidGroupId()) {
-                    blockedGroupIds.add(messageObject.getGroupIdForUse());
+                    flexBlockedGroupIds.add(messageObject.getGroupIdForUse());
                 }
             }
         }
+        for (MessageObject message : arr) {
+            if (message.hasValidGroupId() && flexBlockedGroupIds.contains(message.getGroupIdForUse())) blockedMessages.add(message);
+        }
+        return blockedMessages;
+    }
+
+    private boolean collapseBlockedMessages(ArrayList<MessageObject> arr) {
+        HashSet<MessageObject> blockedMessages = getFlexBlockedMessages(arr);
         int blockedCount = 0;
         int insertIndex = -1;
         MessageObject firstBlockedMessage = null;
         for (int i = arr.size() - 1; i >= 0; --i) {
             MessageObject messageObject = arr.get(i);
-            boolean blocked = blockedMessages.contains(messageObject) || messageObject.hasValidGroupId() && blockedGroupIds.contains(messageObject.getGroupIdForUse());
+            boolean blocked = blockedMessages.contains(messageObject);
             if (blocked) {
                 blockedCount++;
                 insertIndex = i;
