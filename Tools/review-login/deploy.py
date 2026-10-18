@@ -26,11 +26,11 @@ if credentials_path.exists():
 else:
     credentials = {
         'phone': args.phone,
-        'base_url': 'https://secapi.telecom.moe/arkgram-review/',
         'owner_username': 'owner', 'owner_password': secrets.token_urlsafe(32),
         'review_username': 'reviewer', 'review_password': secrets.token_urlsafe(32),
     }
-    credentials_path.write_text(json.dumps(credentials, indent=2) + '\n', encoding='utf-8')
+credentials['base_url'] = 'https://oracle-osa-01.telecom.moe/arkgram-review/'
+credentials_path.write_text(json.dumps(credentials, indent=2) + '\n', encoding='utf-8')
 
 environment = {
     'TG_API_ID': re.search(r'APP_ID\s*=\s*(\d+)', build_vars).group(1),
@@ -86,6 +86,8 @@ with get_ssh_client('oracle-osa') as ssh:
             run('cp -- ' + shlex.quote(proxy_path) + ' ' + shlex.quote(proxy_path + '.previous'))
         sftp.put(str(source_root / 'proxy.conf'), proxy_path)
         sftp.chmod(proxy_path, 0o644)
+        sftp.put(str(source_root / 'site.conf'), '/opt/1panel/www/conf.d/arkgram-review.conf')
+        sftp.chmod('/opt/1panel/www/conf.d/arkgram-review.conf', 0o644)
     run('set -e\ndocker exec 1Panel-openresty-CGfH openresty -t\n'
         'docker exec 1Panel-openresty-CGfH openresty -s reload\n'
         'systemctl is-active arkgram-review.service')

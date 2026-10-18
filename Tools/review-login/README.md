@@ -35,6 +35,10 @@ the account. Authentication protects account access and cannot be disabled;
 rotate a credential by changing the environment file and restarting the service.
 No extra request rate limits or alternative login success paths are added.
 
+Oracle-OSA uses `https://oracle-osa-01.telecom.moe/arkgram-review/` with the
+existing Let's Encrypt wildcard certificate. Its dedicated `site.conf` avoids
+the Cloudflare block on `secapi.telecom.moe` without changing that site's WAF.
+
 At `https://<host>/arkgram-review/admin/`, authenticate as `owner` and enter
 `OWNER_PASSWORD`. Request a Telegram login code, enter it on this HTTPS page and
 complete two-step verification if Telegram requests it. The service verifies
