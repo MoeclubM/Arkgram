@@ -2,6 +2,14 @@ name: Telegram test server verification
 
 on:
   workflow_dispatch:
+    inputs:
+      code_length:
+        description: Documented fixed-code variant to verify independently
+        type: choice
+        default: '5'
+        options:
+          - '5'
+          - '6'
 
 permissions:
   contents: read
@@ -14,6 +22,8 @@ jobs:
       - name: Install MTProto client
         run: python3 -m pip install telethon==1.45.0
       - name: Verify official test DC and fixed login code
+        env:
+          TEST_CODE_LENGTH: ${{ inputs.code_length }}
         run: python3 Tools/ci/verify_telegram_test_server.py
       - name: Upload verification result
         if: always()

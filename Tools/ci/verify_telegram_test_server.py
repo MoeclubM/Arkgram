@@ -18,6 +18,7 @@ api_hash = re.search(r'APP_HASH\s*=\s*"([^"]+)"', source).group(1)
 phone = '999662' + os.environ['GITHUB_RUN_ID'][-4:]
 result = {'test_dc': 2, 'address': '149.154.167.40', 'port': 80,
           'phone': phone, 'status': 'connecting', 'account_created': False,
+          'attempt_code_length': int(os.environ['TEST_CODE_LENGTH']),
           'documentation': 'https://core.telegram.org/api/auth#test-accounts'}
 
 
@@ -37,7 +38,7 @@ async def main():
         result['status'] = 'verifying_fixed_code'
         authorization = await client(functions.auth.SignInRequest(
             phone_number=phone, phone_code_hash=sent.phone_code_hash,
-            phone_code='2' * sent.type.length))
+            phone_code='2' * result['attempt_code_length']))
         result['fixed_code_accepted'] = True
         result['authorization_type'] = type(authorization).__name__
         if isinstance(authorization, types.auth.AuthorizationSignUpRequired):
