@@ -3,6 +3,14 @@ name: Telegram test server verification
 on:
   workflow_dispatch:
     inputs:
+      test_dc:
+        description: Official Telegram test datacenter
+        type: choice
+        default: '2'
+        options:
+          - '1'
+          - '2'
+          - '3'
       code_length:
         description: Documented fixed-code variant to verify independently
         type: choice
@@ -23,6 +31,7 @@ jobs:
         run: python3 -m pip install telethon==1.45.0
       - name: Verify official test DC and fixed login code
         env:
+          TEST_DC: ${{ inputs.test_dc }}
           TEST_CODE_LENGTH: ${{ inputs.code_length }}
         run: python3 Tools/ci/verify_telegram_test_server.py
       - name: Upload verification result

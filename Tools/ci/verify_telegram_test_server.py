@@ -15,8 +15,10 @@ from telethon import TelegramClient, functions, types
 source = Path('TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java').read_text(encoding='utf-8')
 api_id = int(re.search(r'APP_ID\s*=\s*(\d+)', source).group(1))
 api_hash = re.search(r'APP_HASH\s*=\s*"([^"]+)"', source).group(1)
-phone = '999662' + os.environ['GITHUB_RUN_ID'][-4:]
-result = {'test_dc': 2, 'address': '149.154.167.40', 'port': 80,
+dc = int(os.environ['TEST_DC'])
+address = {1: '149.154.175.40', 2: '149.154.167.40', 3: '149.154.175.117'}[dc]
+phone = f'99966{dc}' + os.environ['GITHUB_RUN_ID'][-4:]
+result = {'test_dc': dc, 'address': address, 'port': 80,
           'phone': phone, 'status': 'connecting', 'account_created': False,
           'attempt_code_length': int(os.environ['TEST_CODE_LENGTH']),
           'documentation': 'https://core.telegram.org/api/auth#test-accounts'}
@@ -24,7 +26,7 @@ result = {'test_dc': 2, 'address': '149.154.167.40', 'port': 80,
 
 async def main():
     client = TelegramClient(None, api_id, api_hash)
-    client.session.set_dc(2, '149.154.167.40', 80)
+    client.session.set_dc(dc, address, 80)
     try:
         await client.connect()
         config = await client(functions.help.GetConfigRequest())
@@ -38,7 +40,7 @@ async def main():
         result['status'] = 'verifying_fixed_code'
         authorization = await client(functions.auth.SignInRequest(
             phone_number=phone, phone_code_hash=sent.phone_code_hash,
-            phone_code='2' * result['attempt_code_length']))
+            phone_code=str(dc) * result['attempt_code_length']))
         result['fixed_code_accepted'] = True
         result['authorization_type'] = type(authorization).__name__
         if isinstance(authorization, types.auth.AuthorizationSignUpRequired):
