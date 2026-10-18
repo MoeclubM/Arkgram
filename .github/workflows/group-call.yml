@@ -1,0 +1,84 @@
+name: ArkGram group call initialization
+
+on:
+  push:
+    paths:
+      - 'TMessagesProj/jni/voip/**'
+      - 'TMessagesProj/src/main/java/org/telegram/messenger/voip/**'
+      - 'TMessagesProj_AppTests/src/androidTest/java/org/telegram/messenger/voip/**'
+      - '.github/workflows/group-call.yml'
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: Optional Git revision of jvm_android.cc for reproducing the original crash
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_CI_ABI_FILTERS: x86_64
+      ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS: arkgram
+      ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ci-debug-pass
+      ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ci-debug-pass
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Restore the original native thread initializer for comparison
+        if: inputs.baseline_ref != ''
+        env:
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+        run: git show "$BASELINE_REF:TMessagesProj/jni/voip/webrtc/modules/utility/source/jvm_android.cc" > TMessagesProj/jni/voip/webrtc/modules/utility/source/jvm_android.cc
+      - uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6.1.0
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+      - uses: android-actions/setup-android@v4.0.1
+        with:
+          packages: 'platforms;android-36 platforms;android-37 build-tools;36.0.0 ndk;27.2.12479018 cmake;3.22.1'
+      - name: Prepare CI signing and build the instrumentation APKs
+        run: |
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+          rm TMessagesProj/config/release.keystore
+          keytool -genkeypair -storetype PKCS12 -keystore TMessagesProj/config/release.keystore -alias arkgram -storepass ci-debug-pass -keypass ci-debug-pass -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=ArkGram CI'
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_AppTests:assembleAfatDebug :TMessagesProj_AppTests:assembleAfatDebugAndroidTest --build-cache --stacktrace
+          ./gradlew --stop
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Initialize real group and conference native instances
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: |
+            adb install -r TMessagesProj_AppTests/build/outputs/apk/afat/debug/*.apk
+            adb shell pm grant moe.telecom.arkgram.web android.permission.RECORD_AUDIO
+            ./gradlew :TMessagesProj_AppTests:connectedAfatDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=org.telegram.messenger.voip.GroupCallInitializationTest --stacktrace
+      - name: Collect emulator crash output
+        if: always()
+        run: adb logcat -d -b crash > group-call-crash.log
+      - uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: ArkGram-group-call-results
+          path: |
+            TMessagesProj_AppTests/build/reports/androidTests/
+            TMessagesProj_AppTests/build/outputs/androidTest-results/
+            group-call-crash.log
+          if-no-files-found: error
