@@ -53,6 +53,7 @@ jobs:
           rm TMessagesProj/config/release.keystore
           keytool -genkeypair -storetype PKCS12 -keystore TMessagesProj/config/release.keystore -alias arkgram -storepass ci-debug-pass -keypass ci-debug-pass -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=ArkGram CI'
           chmod +x gradlew
+          ./gradlew :TMessagesProj_AppTests:checkAfatDebugAarMetadata :TMessagesProj_AppTests:checkAfatDebugAndroidTestAarMetadata --stacktrace
           ./gradlew :TMessagesProj_AppTests:assembleAfatDebug :TMessagesProj_AppTests:assembleAfatDebugAndroidTest --build-cache --stacktrace
           ./gradlew --stop
       - name: Enable emulator acceleration
