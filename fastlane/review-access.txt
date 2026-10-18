@@ -1,13 +1,13 @@
 Reviewer sign-in (real Telegram account)
 
 1. Launch ArkGram and select Start Messaging.
-2. On the phone number screen, select "Reviewer sign-in".
-3. Enter the reviewer access code supplied privately in Google Play Console's App access instructions, then select Continue.
+2. On the regular phone number screen, enter the fictional review login alias supplied in Play Console and press Next. There is no separate review button.
+3. On the verification code screen, enter the fixed 12-digit code supplied privately in Play Console. No SMS is sent. The server checks both the alias and the code before authorizing this device.
 4. ArkGram creates a real Telegram device session for the dedicated review account. No SMS code, QR scanner or owner intervention is required.
 5. Use the application's regular chats, contacts and settings. This is the normal Telegram backend, not the offline demo.
 6. To sign out, open Settings, select More options, then Log out and confirm the logout.
 
-The reviewer access code is not included in the application or this public file. Only the service URL is shipped. The account phone number, owner credentials and server Telegram session are not embedded in the application. If Telegram requires two-step verification, the application shows its regular password screen; any required password must also be supplied privately in Play Console.
+The fixed review code is not included in the application or this public file and is not saved by the app. The app ships only a fictional review login alias and service URL. The real Telegram phone number, owner credentials and server Telegram session stay on the server. If Telegram requires two-step verification, the application shows its regular password screen; any required password must also be supplied privately in Play Console.
 
 AI and translation providers
 
@@ -15,14 +15,14 @@ External AI features use a provider, model and API key configured under Settings
 
 Additional offline demo
 
-On the phone number screen, "Try offline demo" opens clearly labelled local sample chats, contacts and profile. No Telegram account is required. Demo messages are never sent to Telegram. This demo is supplementary and does not replace the real reviewer sign-in instructions above.
+Entering the fictional number +1 202-555-0100 on the normal phone number screen opens clearly labelled local sample chats, contacts and profile. No demo button is displayed. No Telegram account is required. Demo messages are never sent to Telegram. This demo is supplementary and does not replace the real reviewer sign-in instructions above.
 
 Validation status (2026-10-18)
 
 - Real service authorization and new Telegram device login passed in CI; the temporary CI session was logged out: https://github.com/MoeclubM/Arkgram/actions/runs/39109364306
 - Signed Android release bundle and native 16 KB page checks passed: https://github.com/MoeclubM/Arkgram/actions/runs/39109406554
 - Android reviewer sign-in and logout UI verification is pending: https://github.com/MoeclubM/Arkgram/actions/runs/39126322858
-- External AI review configuration is still pending. Do not claim full feature access until the remaining validation is complete.
+- The dedicated external AI provider completed a real translation in CI: https://github.com/MoeclubM/Arkgram/actions/runs/39128594451 . Android provider UI verification remains pending. Telegram Premium is not included in this review account; it is a separate upstream service, not an ArkGram enhancement.
 
 Public support: https://www.telecom.moe/arkgram/
 Privacy policy: https://www.telecom.moe/arkgram/privacy/

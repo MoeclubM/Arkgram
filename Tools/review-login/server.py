@@ -21,6 +21,8 @@ def create_app():
     owner_auth = BasicAuth('owner', os.environ['OWNER_PASSWORD']).encode()
     review_auth = BasicAuth('reviewer', os.environ['REVIEW_PASSWORD']).encode()
     review_bearer = 'Bearer ' + os.environ['REVIEW_PASSWORD']
+    login_bearer = 'Bearer ' + os.environ['REVIEW_LOGIN_CODE']
+    login_account = os.environ['REVIEW_LOGIN_ACCOUNT']
 
     @web.middleware
     async def authenticate(request, handler):
@@ -28,7 +30,9 @@ def create_app():
             supplied = request.headers.get('Authorization', '').encode()
             expected = owner_auth if request.path.startswith('/admin/') else review_auth
             allowed = hmac.compare_digest(supplied, expected.encode())
-            if not request.path.startswith('/admin/'):
+            if request.path == '/api/login':
+                allowed = hmac.compare_digest(supplied, login_bearer.encode())
+            elif not request.path.startswith('/admin/'):
                 allowed |= hmac.compare_digest(supplied, review_bearer.encode())
             if not allowed:
                 raise web.HTTPUnauthorized(headers={'WWW-Authenticate': 'Basic realm="ArkGram review"'})
@@ -114,6 +118,8 @@ def create_app():
 
     async def authorize(request):
         data = request['payload']
+        if request.path == '/api/login' and data.get('account') != login_account:
+            raise web.HTTPUnauthorized(text='Invalid review account.')
         raw = data.get('token')
         if not isinstance(raw, str) or not raw.strip():
             raise web.HTTPBadRequest(text='A Telegram QR login token is required.')
@@ -134,6 +140,7 @@ def create_app():
         web.get('/admin/status', account_status), web.get('/api/status', account_status),
         web.post('/admin/send-code', send_code), web.post('/admin/sign-in', sign_in),
         web.post('/admin/password', password), web.post('/api/authorize', authorize),
+        web.post('/api/login', authorize),
     ])
     return app
 

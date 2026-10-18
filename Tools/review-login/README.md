@@ -24,7 +24,9 @@ TG_API_HASH=<application API hash>
 TG_PHONE=<international number, digits only>
 TG_SESSION=/var/lib/arkgram-review/telegram
 OWNER_PASSWORD=<separate random owner password>
-REVIEW_PASSWORD=<random review access code>
+REVIEW_PASSWORD=<random web and status API password>
+REVIEW_LOGIN_ACCOUNT=12025550101
+REVIEW_LOGIN_CODE=<private fixed 12-digit review verification code>
 PORT=22901
 ```
 
@@ -57,15 +59,28 @@ artifacts. Losing/revoking the server session requires the owner to sign in agai
   on success. RPC failures return `502` with their exception type/message and
   remain visible in the journal. Invalid input and unauthorized access are errors.
 
-API authentication: `Authorization: Bearer <REVIEW_PASSWORD>`, or HTTP Basic with
+- `POST /api/login`, JSON `{"account":"<fictional review alias>","token":"<Telegram login token>"}`:
+  the Android login endpoint. Requires `Authorization: Bearer <REVIEW_LOGIN_CODE>`
+  and an exact match to `REVIEW_LOGIN_ACCOUNT`; calls the same real authorization
+  handler. The web password cannot authorize this endpoint and the numeric login
+  code cannot access the owner page or status API.
+
+Other API authentication: `Authorization: Bearer <REVIEW_PASSWORD>`, or HTTP Basic with
 username `reviewer`. The reviewer webpage at `/arkgram-review/` uses HTTP Basic.
 Browser POSTs require JSON so a cross-site HTML form cannot trigger an account
 operation using cached HTTP Basic credentials. The service does not enable CORS.
 
-Android exposes "Reviewer sign-in" on its phone number screen. It exports its own
-token, submits it to this API and completes Telegram's official QR login flow,
-including DC migration and the existing two-step verification screen when needed.
-The reviewer access code stays in memory; only the service URL is shipped.
+Android has no review or offline-demo button. Entering the fictional review alias
+on the regular phone number screen opens the existing verification code screen.
+The fixed code is checked by the service before it approves the exported Telegram
+token. The normal QR login protocol completes the device authorization, including
+DC migration and Telegram's existing two-step verification screen when needed.
+The review code stays in memory and is excluded from saved login state. Only the
+fictional alias and service URL ship in the app; the real account number stays on
+the service. Ordinary login numbers are never sent to this service. Reviewers use
+the normal authenticated app; no content or compliance behavior is switched.
+The supplementary offline demo remains accessible through its fictional number,
+with its existing explicit offline labels. It does not authorize a Telegram login.
 See `fastlane/review-access.txt` for review steps and current validation status.
 
 ## Verification
@@ -78,7 +93,8 @@ the deployed service after the owner initializes the account.
 Pass the deployed base URL to the workflow's `deployment_url` input to verify
 public HTTPS health and that owner/reviewer endpoints require credentials.
 Set `verify_authorization=true` to verify real device authorization using the
-private `ARKGRAM_REVIEW_ACCESS_CODE` CI secret, then log out the temporary device.
+private `ARKGRAM_REVIEW_ACCESS_CODE` (status API) and `ARKGRAM_REVIEW_LOGIN_CODE`
+(Android verification code) CI secrets, then log out the temporary device.
 The Play screenshots workflow's `verify_reviewer_login` input additionally checks
 the real Android entry and logout. It saves only offline-demo screenshots; real
 account screens and UI dumps must never be uploaded as artifacts.

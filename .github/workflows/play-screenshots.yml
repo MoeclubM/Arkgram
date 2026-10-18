@@ -73,7 +73,7 @@ jobs:
       - name: Capture actual offline demo screens
         uses: reactivecircus/android-emulator-runner@v2
         env:
-          REVIEW_ACCESS_CODE: ${{ inputs.verify_reviewer_login && secrets.ARKGRAM_REVIEW_ACCESS_CODE || '' }}
+          REVIEW_LOGIN_CODE: ${{ inputs.verify_reviewer_login && secrets.ARKGRAM_REVIEW_LOGIN_CODE || '' }}
         with:
           api-level: 35
           target: google_apis
@@ -83,8 +83,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: |
             adb install -g universal.apk
+            if [ "${{ inputs.verify_reviewer_login }}" = "true" ]; then test -n "$REVIEW_LOGIN_CODE"; python3 Tools/ci/verify_reviewer_login.py; fi
             python3 Tools/ci/capture_review_demo.py
-            if [ -n "$REVIEW_ACCESS_CODE" ]; then python3 Tools/ci/verify_reviewer_login.py; fi
       - name: Upload screenshots and UI hierarchy
         if: always()
         uses: actions/upload-artifact@v7.0.1

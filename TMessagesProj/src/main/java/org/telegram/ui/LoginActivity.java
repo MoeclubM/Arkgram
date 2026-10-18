@@ -1488,6 +1488,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void needHideProgress(boolean cancel, boolean animated) {
+        if (cancel && reviewLoginRequest != null) {
+            reviewLoginRequest.cancel();
+            reviewLoginRequest = null;
+            ((LoginActivitySmsView) views[VIEW_CODE_MESSAGE]).nextPressed = false;
+        }
         if (progressRequestId != 0) {
             if (cancel) {
                 ConnectionsManager.getInstance(currentAccount).cancelRequest(progressRequestId, true);
@@ -1653,72 +1658,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     private boolean pendingSwitchingAccount;
     private ReviewLoginRequest reviewLoginRequest;
-
-    private void showReviewLogin() {
-        if (reviewLoginRequest != null) return;
-        EditTextBoldCursor accessCode = new EditTextBoldCursor(getParentActivity());
-        accessCode.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        accessCode.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-        accessCode.setHintTextColor(getThemedColor(Theme.key_dialogTextHint));
-        accessCode.setHint(getString(R.string.ReviewLoginAccessCode));
-        accessCode.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        accessCode.setSingleLine(true);
-        accessCode.setSaveEnabled(false);
-        LinearLayout container = new LinearLayout(getParentActivity());
-        container.setOrientation(LinearLayout.VERTICAL);
-        container.addView(accessCode, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.WRAP_CONTENT, 24, 0, 24, 12));
-        AlertDialog dialog = new AlertDialog.Builder(getParentActivity())
-                .setTitle(getString(R.string.ReviewLoginEntry))
-                .setMessage(getString(R.string.ReviewLoginInfo))
-                .setView(container)
-                .setNegativeButton(getString(R.string.Cancel), null)
-                .setPositiveButton(getString(R.string.Continue), (ignored, which) -> {
-                    String code = accessCode.getText().toString().trim();
-                    accessCode.setText("");
-                    AndroidUtilities.hideKeyboard(accessCode);
-                    if (code.isEmpty()) {
-                        needShowAlert(getString(R.string.ErrorOccurred), getString(R.string.ReviewLoginAccessCode));
-                        return;
-                    }
-                    needShowProgress(0);
-                    reviewLoginRequest = new ReviewLoginRequest(currentAccount, classGuid, code, (authorization, error) -> {
-                        reviewLoginRequest = null;
-                        needHideProgress(false);
-                        if (authorization != null) {
-                            onAuthSuccess(authorization);
-                        } else if ("SESSION_PASSWORD_NEEDED".equals(error.text)) {
-                            TL_account.getPassword request = new TL_account.getPassword();
-                            int id = getConnectionsManager().sendRequest(request, (response, passwordError) -> AndroidUtilities.runOnUIThread(() -> {
-                                needHideProgress(false);
-                                if (passwordError != null) {
-                                    needShowAlert(getString(R.string.ErrorOccurred), passwordError.text);
-                                    return;
-                                }
-                                TL_account.Password password = (TL_account.Password) response;
-                                if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
-                                    AlertsCreator.showUpdateAppAlert(getParentActivity(), getString(R.string.UpdateAppAlert), true);
-                                    return;
-                                }
-                                SerializedData data = new SerializedData(password.getObjectSize());
-                                password.serializeToStream(data);
-                                Bundle params = new Bundle();
-                                params.putString("password", Utilities.bytesToHex(data.toByteArray()));
-                                data.cleanup();
-                                setPage(VIEW_PASSWORD, true, params, false);
-                            }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
-                            getConnectionsManager().bindRequestToGuid(id, classGuid);
-                            needShowProgress(id);
-                        } else {
-                            needShowAlert(getString(R.string.ErrorOccurred), error.text);
-                        }
-                    });
-                    reviewLoginRequest.start();
-                }).create();
-        showDialog(dialog);
-        accessCode.requestFocus();
-        AndroidUtilities.showKeyboard(accessCode);
-    }
 
     private void onAuthSuccess(TLRPC.TL_auth_authorization res, boolean afterSignup) {
         MessagesController.getInstance(currentAccount).cleanup();
@@ -2464,31 +2403,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return false;
             });
 
-            if (activityMode == MODE_LOGIN) {
-                TextView demo = new TextView(context);
-                demo.setText(getString(R.string.ReviewDemoEntry));
-                demo.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                demo.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
-                demo.setGravity(Gravity.CENTER);
-                demo.setPadding(dp(16), dp(12), dp(16), dp(12));
-                demo.setOnClickListener(v -> {
-                    AndroidUtilities.hideKeyboard(phoneField);
-                    presentFragment(new ReviewDemoActivity());
-                });
-                addView(demo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-                TextView reviewer = new TextView(context);
-                reviewer.setText(getString(R.string.ReviewLoginEntry));
-                reviewer.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                reviewer.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
-                reviewer.setGravity(Gravity.CENTER);
-                reviewer.setPadding(dp(16), dp(12), dp(16), dp(12));
-                reviewer.setOnClickListener(v -> {
-                    AndroidUtilities.hideKeyboard(phoneField);
-                    showReviewLogin();
-                });
-                addView(reviewer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            }
-
             int bottomMargin = 72;
 
             final boolean allowTestBackend = (BuildVars.DEBUG_VERSION || TEST_BACKEND_IN_STORE && !BuildConfig.BUNDLE) || getConnectionsManager().isTestBackend();
@@ -2881,6 +2795,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText()))) {
                 AndroidUtilities.hideKeyboard(phoneField);
                 presentFragment(new ReviewDemoActivity());
+                return;
+            }
+
+            if (activityMode == MODE_LOGIN && ReviewLoginRequest.PHONE.equals(
+                    PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText()))) {
+                Bundle params = new Bundle();
+                params.putString("phone", "+" + ReviewLoginRequest.PHONE);
+                params.putString("phoneFormated", ReviewLoginRequest.PHONE);
+                params.putInt("length", ReviewLoginRequest.CODE_LENGTH);
+                setPage(VIEW_CODE_MESSAGE, true, params, false);
                 return;
             }
 
@@ -3344,6 +3268,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     public class LoginActivitySmsView extends SlideView implements NotificationCenter.NotificationCenterDelegate {
         /* package */ RLottieDrawable hintDrawable;
 
+        private boolean reviewLogin;
         private String phone;
         private String phoneHash;
         private String requestPhone;
@@ -4104,7 +4029,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 }
                 return;
             }
-            waitingForEvent = true;
+            reviewLogin = activityMode == MODE_LOGIN && ReviewLoginRequest.PHONE.equals(params.getString("phoneFormated"));
+            waitingForEvent = !reviewLogin;
             if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didReceiveSmsCode);
             } else if (currentType == AUTH_TYPE_SMS) {
@@ -4141,6 +4067,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             nextCodeAuth = null;
 
             codeFieldContainer.setNumbersCount(length, currentType);
+            if (reviewLogin) {
+                for (CodeNumberField field : codeFieldContainer.codeField) {
+                    field.setLayoutParams(LayoutHelper.createLinear(20, 42, Gravity.CENTER_HORIZONTAL, 0, 0, 3, 0));
+                    field.setSaveEnabled(false);
+                }
+            }
             for (CodeNumberField f : codeFieldContainer.codeField) {
                 f.setShowSoftInputOnFocusCompat(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
                 f.addTextChangedListener(new TextWatcher() {
@@ -4212,7 +4144,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     str = AndroidUtilities.replaceTags(LocaleController.formatString("SentFragmentCode", R.string.SentFragmentCode, LocaleController.addNbsp(number)));
                 }
             }
-            confirmTextView.setText(str);
+            confirmTextView.setText(reviewLogin ? getString(R.string.ReviewLoginInfo) : str);
 
             if (currentType != AUTH_TYPE_FRAGMENT_SMS) {
                 if (currentType == AUTH_TYPE_MESSAGE) {
@@ -4239,6 +4171,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             destroyTimer();
             destroyCodeTimer();
+
+            if (reviewLogin) {
+                timeText.setVisibility(GONE);
+                problemText.setVisibility(GONE);
+                setProblemTextVisible(false);
+                return;
+            }
 
             lastCurrentTime = System.currentTimeMillis();
             if (currentType == AUTH_TYPE_MESSAGE) {
@@ -4493,6 +4432,45 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
 
             if (currentViewNum >= VIEW_CODE_MESSAGE && currentViewNum <= VIEW_CODE_CALL && codeFieldContainer.isFocusSuppressed) {
+                return;
+            }
+
+            if (reviewLogin) {
+                nextPressed = true;
+                needShowProgress(0);
+                reviewLoginRequest = new ReviewLoginRequest(currentAccount, classGuid, code, (authorization, error) -> {
+                    reviewLoginRequest = null;
+                    nextPressed = false;
+                    needHideProgress(false);
+                    if (authorization != null) {
+                        animateSuccess(() -> onAuthSuccess(authorization));
+                    } else if ("SESSION_PASSWORD_NEEDED".equals(error.text)) {
+                        TL_account.getPassword request = new TL_account.getPassword();
+                        int id = getConnectionsManager().sendRequest(request, (response, passwordError) -> AndroidUtilities.runOnUIThread(() -> {
+                            needHideProgress(false);
+                            if (passwordError != null) {
+                                needShowAlert(getString(R.string.ErrorOccurred), passwordError.text);
+                                return;
+                            }
+                            TL_account.Password password = (TL_account.Password) response;
+                            if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
+                                AlertsCreator.showUpdateAppAlert(getParentActivity(), getString(R.string.UpdateAppAlert), true);
+                                return;
+                            }
+                            SerializedData data = new SerializedData(password.getObjectSize());
+                            password.serializeToStream(data);
+                            Bundle params = new Bundle();
+                            params.putString("password", Utilities.bytesToHex(data.toByteArray()));
+                            data.cleanup();
+                            setPage(VIEW_PASSWORD, true, params, false);
+                        }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                        getConnectionsManager().bindRequestToGuid(id, classGuid);
+                        needShowProgress(id);
+                    } else {
+                        needShowAlert(getString(R.string.ErrorOccurred), error.text);
+                    }
+                });
+                reviewLoginRequest.start();
                 return;
             }
 
@@ -4862,12 +4840,14 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             nextPressed = false;
             tryHideProgress(true);
-            TLRPC.TL_auth_cancelCode req = new TLRPC.TL_auth_cancelCode();
-            req.phone_number = requestPhone;
-            req.phone_code_hash = phoneHash;
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            if (!reviewLogin) {
+                TLRPC.TL_auth_cancelCode req = new TLRPC.TL_auth_cancelCode();
+                req.phone_number = requestPhone;
+                req.phone_code_hash = phoneHash;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 
-            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+            }
 
             destroyTimer();
             destroyCodeTimer();
@@ -4964,7 +4944,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         @Override
         public void saveStateParams(Bundle bundle) {
             String code = codeFieldContainer.getCode();
-            if (code.length() != 0) {
+            if (!reviewLogin && code.length() != 0) {
                 bundle.putString("smsview_code_" + currentType, code);
             }
             if (catchedPhone != null) {
@@ -8576,7 +8556,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             showProxyButton(false, animated);
         }
     }
-    
+
     private boolean proxyButtonVisible;
     private Runnable showProxyButtonDelayed;
     private void showProxyButtonDelayed() {

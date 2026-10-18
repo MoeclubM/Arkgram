@@ -1,4 +1,4 @@
-"""Capture the real release UI in CI, using the explicit local demo entry."""
+"""Capture the real release UI in CI, using the local demo login number."""
 import re
 import subprocess
 import time
@@ -50,6 +50,20 @@ def tap(tree, label):
     subprocess.run(['adb', 'shell', 'input', 'tap', str((left + right) // 2), str((top + bottom) // 2)], check=True)
 
 
+def enter_phone(number, screenshot=None):
+    login = screen(screenshot, strings['PhoneNumber'])
+    labels = {node.get('text', '') for node in login.iter('node')}
+    assert not labels.intersection({'Reviewer sign-in', strings['ReviewDemoEntry']}), 'Review entries must not be visible'
+    for description, value in [(strings['LoginAccessibilityCountryCode'], number[:1]),
+                               (strings['PhoneNumber'], number[1:])]:
+        field = next(node for node in login.iter('node')
+                     if node.get('class') == 'android.widget.EditText' and node.get('content-desc') == description)
+        tap(field, field.get('text', ''))
+        subprocess.run(['adb', 'shell', 'input', 'keycombination', '113', '29'], check=True)
+        subprocess.run(['adb', 'shell', 'input', 'text', value], check=True)
+    tap(screen(None, strings['Done']), strings['Done'])
+
+
 if __name__ == '__main__':
     subprocess.run(['adb', 'shell', 'wm', 'size', '1080x1920'], check=True)
     subprocess.run(['adb', 'shell', 'wm', 'density', '420'], check=True)
@@ -57,8 +71,7 @@ if __name__ == '__main__':
                     'moe.telecom.arkgram/org.telegram.ui.LaunchActivity'], check=True)
     welcome = screen('01-welcome', strings['StartMessaging'])
     tap(welcome, strings['StartMessaging'])
-    login = screen('02-login', strings['ReviewDemoEntry'])
-    tap(login, strings['ReviewDemoEntry'])
+    enter_phone('12025550100', '02-login')
     chats = screen('03-offline-demo', strings['ReviewDemoTitle'])
     tap(chats, strings['MainTabsContacts'])
     contacts = screen('03-demo-contacts', strings['ReviewDemoContactOne'])

@@ -16,6 +16,9 @@ import java.nio.charset.StandardCharsets;
 
 /** Exchanges a reviewer access code for a real Telegram device authorization. */
 public class ReviewLoginRequest {
+    // A fictional login alias, never the real Telegram account number.
+    public static final String PHONE = "12025550101";
+    public static final int CODE_LENGTH = 12;
     private final ConnectionsManager connections;
     private final int guid;
     private final Utilities.Callback2<TLRPC.TL_auth_authorization, TLRPC.TL_error> callback;
@@ -81,6 +84,7 @@ public class ReviewLoginRequest {
                 connection.setRequestProperty("Authorization", "Bearer " + accessCode);
                 connection.setDoOutput(true);
                 JSONObject body = new JSONObject();
+                body.put("account", PHONE);
                 body.put("token", Base64.encodeToString(token, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
                 try (java.io.OutputStream output = connection.getOutputStream()) {
                     output.write(body.toString().getBytes(StandardCharsets.UTF_8));

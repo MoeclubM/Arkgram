@@ -25,9 +25,10 @@ async def main():
         qr = await client.qr_login()
         waiting = asyncio.create_task(qr.wait())
         await asyncio.sleep(0)  # Register the update handler before accepting the token.
-        body = json.dumps({'token': qr.url}).encode()
-        request = urllib.request.Request(base + 'api/authorize', data=body,
-                                         headers={**headers, 'Content-Type': 'application/json'})
+        body = json.dumps({'account': '12025550101', 'token': qr.url}).encode()
+        request = urllib.request.Request(base + 'api/login', data=body,
+                                         headers={'Authorization': 'Bearer ' + os.environ['REVIEW_LOGIN_CODE'],
+                                                  'Content-Type': 'application/json'})
         response = await asyncio.to_thread(urllib.request.urlopen, request)
         with response:
             result = json.load(response)

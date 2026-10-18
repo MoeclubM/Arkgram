@@ -82,6 +82,7 @@ jobs:
         env:
           REVIEW_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
           REVIEW_ACCESS_CODE: ${{ secrets.ARKGRAM_REVIEW_ACCESS_CODE }}
+          REVIEW_LOGIN_CODE: ${{ secrets.ARKGRAM_REVIEW_LOGIN_CODE }}
         run: python Tools/review-login/verify_authorization.py
       - name: Verify the reviewer AI provider
         if: inputs.verify_ai_provider

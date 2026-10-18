@@ -2,10 +2,8 @@
 <resources>
     <string name="AppName">ArkGram</string>
     <string name="AppNameBeta">ArkGram Beta</string>
-    <string name="ReviewLoginEntry">Reviewer sign-in</string>
-    <string name="ReviewLoginAccessCode">Review access code</string>
-    <string name="ReviewLoginInfo">Enter the access code provided in the review instructions. This signs in to a real Telegram review account through oracle-osa-01.telecom.moe. Your access code is not saved.</string>
-    <string name="ReviewLoginServiceUrl" translatable="false">https://oracle-osa-01.telecom.moe/arkgram-review/api/authorize</string>
+    <string name="ReviewLoginInfo">Enter the fixed verification code supplied in the review instructions. This signs in to the shared Telegram review account. No SMS is sent.</string>
+    <string name="ReviewLoginServiceUrl" translatable="false">https://oracle-osa-01.telecom.moe/arkgram-review/api/login</string>
     <string name="ReviewDemoTitle">ArkGram Demo</string>
     <string name="ReviewDemoOffline">Offline sample account</string>
     <string name="ReviewDemoEntry">Try offline demo · +1 202-555-0100</string>

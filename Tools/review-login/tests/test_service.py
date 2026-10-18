@@ -25,6 +25,7 @@ class ReviewServiceTests(unittest.IsolatedAsyncioTestCase):
             'TG_PHONE': '9996620000',
             'TG_SESSION': str(Path(self.directory.name) / 'unauthorized'),
             'OWNER_PASSWORD': 'ci-owner-only', 'REVIEW_PASSWORD': 'ci-reviewer-only',
+            'REVIEW_LOGIN_ACCOUNT': '12025550101', 'REVIEW_LOGIN_CODE': '012345678901',
         })
         self.client = TestClient(TestServer(create_app()))
         await self.client.start_server()
@@ -37,7 +38,7 @@ class ReviewServiceTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_every_account_route_requires_credentials(self):
         for method, path in [('get', '/'), ('get', '/api/status'), ('get', '/admin/'),
-                             ('get', '/admin/status'), ('post', '/api/authorize'),
+                             ('get', '/admin/status'), ('post', '/api/authorize'), ('post', '/api/login'),
                              ('post', '/admin/send-code'), ('post', '/admin/sign-in'),
                              ('post', '/admin/password')]:
             response = await getattr(self.client, method)(path)
@@ -83,3 +84,20 @@ class ReviewServiceTests(unittest.IsolatedAsyncioTestCase):
             response = await self.client.post('/api/authorize', auth=self.reviewer, json={'token': raw})
             self.assertEqual(response.status, 503)
             self.assertFalse((await response.json())['authorized'])
+
+    async def test_login_requires_both_review_account_and_private_code(self):
+        token = base64.urlsafe_b64encode(b'not-an-issued-login-token').decode().rstrip('=')
+        for authorization in ['Bearer wrong-code', 'Bearer ci-reviewer-only', self.reviewer.encode()]:
+            response = await self.client.post('/api/login', headers={'Authorization': authorization},
+                                              json={'account': '12025550101', 'token': token})
+            self.assertEqual(response.status, 401)
+        headers = {'Authorization': 'Bearer 012345678901'}
+        for payload in [{}, {'account': '9996620000', 'token': token}, {'account': 12025550101, 'token': token}]:
+            response = await self.client.post('/api/login', headers=headers, json=payload)
+            self.assertEqual(response.status, 401)
+        response = await self.client.post('/api/status', headers=headers)
+        self.assertEqual(response.status, 401)
+        response = await self.client.post('/api/login', headers=headers,
+                                          json={'account': '12025550101', 'token': token})
+        self.assertEqual(response.status, 503)
+        self.assertFalse((await response.json())['authorized'])

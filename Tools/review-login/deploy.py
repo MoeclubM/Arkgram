@@ -29,6 +29,9 @@ else:
         'owner_username': 'owner', 'owner_password': secrets.token_urlsafe(32),
         'review_username': 'reviewer', 'review_password': secrets.token_urlsafe(32),
     }
+credentials['login_account'] = '12025550101'
+if 'login_code' not in credentials:
+    credentials['login_code'] = ''.join(secrets.choice('0123456789') for _ in range(12))
 credentials['base_url'] = 'https://oracle-osa-01.telecom.moe/arkgram-review/'
 credentials_path.write_text(json.dumps(credentials, indent=2) + '\n', encoding='utf-8')
 
@@ -37,6 +40,7 @@ environment = {
     'TG_API_HASH': re.search(r'APP_HASH\s*=\s*"([^"]+)"', build_vars).group(1),
     'TG_PHONE': args.phone, 'TG_SESSION': '/var/lib/arkgram-review/telegram',
     'OWNER_PASSWORD': credentials['owner_password'], 'REVIEW_PASSWORD': credentials['review_password'],
+    'REVIEW_LOGIN_ACCOUNT': credentials['login_account'], 'REVIEW_LOGIN_CODE': credentials['login_code'],
     'PORT': '22901',
 }
 
@@ -92,6 +96,6 @@ with get_ssh_client('oracle-osa') as ssh:
         'docker exec 1Panel-openresty-CGfH openresty -s reload\n'
         'systemctl is-active arkgram-review.service')
 
-print('Service deployed. Account sign-in is still required.')
+print('Service deployed. Existing Telegram session is preserved; check account status before owner sign-in.')
 print('Owner setup: ' + credentials['base_url'] + 'admin/')
 print('Private credentials: ' + str(credentials_path))
