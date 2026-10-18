@@ -101,8 +101,6 @@ jobs:
         env:
           REVIEW_LOGIN_CODE: ${{ inputs.verify_reviewer_login && secrets.ARKGRAM_REVIEW_LOGIN_CODE || '' }}
         with:
-          # Official Emulator 36.4.9: isolate the 37.2.12 host-process exit.
-          emulator-build: 14788078
           api-level: 36
           target: google_apis
           arch: x86_64
@@ -120,6 +118,16 @@ jobs:
           df -h /
           ps -eo comm,rss --sort=-rss | head -n 12
           sudo dmesg --ctime | tail -n 80
+      - name: Inspect emulator crash frames without uploading memory dumps
+        if: failure() && runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.27.0 -R rust-minidump/rust-minidump --pattern minidump-stackwalk-x86_64-unknown-linux-gnu.tar.xz --pattern minidump-stackwalk-x86_64-unknown-linux-gnu.tar.xz.sha256
+          sha256sum -c minidump-stackwalk-x86_64-unknown-linux-gnu.tar.xz.sha256
+          mkdir "$RUNNER_TEMP/emulator-stackwalk"
+          tar -xf minidump-stackwalk-x86_64-unknown-linux-gnu.tar.xz -C "$RUNNER_TEMP/emulator-stackwalk" --strip-components=1
+          python3 Tools/ci/report_emulator_crash.py "$RUNNER_TEMP/emulator-stackwalk/minidump-stackwalk"
       - name: Upload screenshots and UI hierarchy
         if: always()
         uses: actions/upload-artifact@v7.0.1
