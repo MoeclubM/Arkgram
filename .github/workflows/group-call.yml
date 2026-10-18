@@ -29,12 +29,13 @@ jobs:
       - uses: actions/checkout@v6.0.2
         with:
           submodules: recursive
-          fetch-depth: 0
       - name: Restore the original native thread initializer for comparison
         if: inputs.baseline_ref != ''
         env:
           BASELINE_REF: ${{ inputs.baseline_ref }}
-        run: git show "$BASELINE_REF:TMessagesProj/jni/voip/webrtc/modules/utility/source/jvm_android.cc" > TMessagesProj/jni/voip/webrtc/modules/utility/source/jvm_android.cc
+        run: |
+          git fetch --depth=1 origin "$BASELINE_REF"
+          git show "$BASELINE_REF:TMessagesProj/jni/voip/webrtc/modules/utility/source/jvm_android.cc" > TMessagesProj/jni/voip/webrtc/modules/utility/source/jvm_android.cc
       - uses: actions/setup-java@v5.2.0
         with:
           distribution: temurin
