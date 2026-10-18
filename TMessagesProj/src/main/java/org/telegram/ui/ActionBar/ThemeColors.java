@@ -870,15 +870,12 @@ public class ThemeColors {
         defaultColors[key_glass_defaultText] = 0x991B2227; //0xFF737876;
         defaultColors[key_glass_targetMainTabs] = 0xFFFFFFFF;
         defaultColors[key_glass_targetMainTopPanel] = 0xFFFFFFFF;
-        defaultColors[key_glass_tabSelected] = 0xFF1a91e6;
-        defaultColors[key_glass_tabSelectedText] = 0xFF0d7fcf;
         defaultColors[key_glass_tabUnselected] = 0xFF1A1D21;
 
         defaultColors[key_botKeyboard_button_danger] = 0xFFdb4646;
         defaultColors[key_botKeyboard_button_primary] = TELEGRAM_COLOR;
         defaultColors[key_botKeyboard_button_success] = 0xFF40b135;
 
-        defaultColors[key_telegram_color_dialogsLogo] = 0xFF168bdb;
         defaultColors[key_telegram_color] = TELEGRAM_COLOR;
         defaultColors[key_telegram_color_text] = TELEGRAM_COLOR_TEXT;
 
