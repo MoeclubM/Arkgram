@@ -2,6 +2,11 @@ name: ArkGram Play screenshots
 
 on:
   workflow_dispatch:
+    inputs:
+      verify_reviewer_login:
+        description: Verify real Android reviewer sign-in and log out the temporary device
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -43,6 +48,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Capture actual offline demo screens
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          REVIEW_ACCESS_CODE: ${{ inputs.verify_reviewer_login && secrets.ARKGRAM_REVIEW_ACCESS_CODE || '' }}
         with:
           api-level: 35
           arch: x86_64
@@ -52,6 +59,7 @@ jobs:
           script: |
             adb install -g universal.apk
             python3 Tools/ci/capture_review_demo.py
+            if [ -n "$REVIEW_ACCESS_CODE" ]; then python3 Tools/ci/verify_reviewer_login.py; fi
       - name: Upload screenshots and UI hierarchy
         if: always()
         uses: actions/upload-artifact@v7.0.1
