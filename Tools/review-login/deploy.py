@@ -10,6 +10,7 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('--fleet-root', type=Path, default=Path('D:/NET'))
 parser.add_argument('--phone', required=True, help='International phone number, digits only')
+parser.add_argument('--wheel-dir', type=Path, required=True, help='Pure Python wheels downloaded from the verified CI run')
 args = parser.parse_args()
 sys.path.insert(0, str(args.fleet_root))
 from connect import get_ssh_client
@@ -52,13 +53,16 @@ with get_ssh_client('oracle-osa') as ssh:
 
     run('set -e\nif ! id -u arkgram-review >/dev/null 2>&1; then '
         'useradd --system --home-dir /var/lib/arkgram-review --shell /usr/sbin/nologin arkgram-review; fi\n'
-        'install -d -m 755 /opt/arkgram-review\n'
+        'install -d -m 755 /opt/arkgram-review /opt/arkgram-review/wheels\n'
         'install -d -m 700 -o arkgram-review -g arkgram-review /var/lib/arkgram-review')
     with ssh.open_sftp() as sftp:
         for name in ['server.py', 'admin.html', 'review.html', 'requirements.txt']:
             (source_root / name).read_bytes().decode('utf-8')
             sftp.put(str(source_root / name), '/opt/arkgram-review/' + name)
             sftp.chmod('/opt/arkgram-review/' + name, 0o644)
+        for wheel in args.wheel_dir.glob('*.whl'):
+            sftp.put(str(wheel), '/opt/arkgram-review/wheels/' + wheel.name)
+            sftp.chmod('/opt/arkgram-review/wheels/' + wheel.name, 0o644)
         with sftp.open('/etc/arkgram-review.env', 'w') as target:
             target.write(''.join(f'{key}={value}\n' for key, value in environment.items()))
         sftp.chmod('/etc/arkgram-review.env', 0o600)
@@ -66,7 +70,8 @@ with get_ssh_client('oracle-osa') as ssh:
         sftp.chmod('/etc/systemd/system/arkgram-review.service', 0o644)
 
     run('set -e\npython3 -m venv /opt/arkgram-review/venv\n'
-        '/opt/arkgram-review/venv/bin/python -m pip install --only-binary=:all: '
+        '/opt/arkgram-review/venv/bin/python -m pip install '
+        '--find-links=/opt/arkgram-review/wheels --only-binary=:all: '
         '-r /opt/arkgram-review/requirements.txt\n'
         'systemctl daemon-reload\nsystemctl enable arkgram-review.service\n'
         'systemctl restart arkgram-review.service')

@@ -9,6 +9,11 @@ key with clients, read chats or accept a fixed Telegram SMS code.
 Install `requirements.txt` into `/opt/arkgram-review/venv` and copy this directory
 to `/opt/arkgram-review`. Run the supplied systemd service as `arkgram-review`.
 The writable Telegram session directory is `/var/lib/arkgram-review`.
+Telethon's pure Python `pyaes` dependency is distributed as source, so the workflow
+builds its portable wheel in CI. Download `ArkGram-review-login-pure-wheels` from
+the successful run and pass its directory as `deploy.py --wheel-dir <directory>`.
+The deployer installs only wheels, including published ARM64 aiohttp wheels;
+application builds and tests are not run on the workstation or deployment host.
 
 Create `/etc/arkgram-review.env` with mode `0600`, owned by root:
 

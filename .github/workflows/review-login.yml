@@ -18,8 +18,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+      - name: Build the pure Python dependency wheel in CI
+        run: python -m pip wheel --no-deps --wheel-dir pure-wheels pyaes==1.6.1
       - name: Install service dependencies
-        run: 'python -m pip install --only-binary=:all: -r Tools/review-login/requirements.txt'
+        run: 'python -m pip install --find-links=pure-wheels --only-binary=:all: -r Tools/review-login/requirements.txt'
       - name: Verify service authentication and real unauthorized MTProto connection
         run: python -m unittest discover -s Tools/review-login/tests -v
       - name: Check browser script syntax
@@ -33,3 +35,8 @@ jobs:
               subprocess.run(['node', '--check'], input=script, text=True, check=True)
               print(f'{page.name}: script syntax valid')
           PY
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ArkGram-review-login-pure-wheels
+          path: pure-wheels/
+          if-no-files-found: error
