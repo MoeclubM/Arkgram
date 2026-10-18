@@ -1,0 +1,20 @@
+[Unit]
+Description=ArkGram Telegram review authorization service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=arkgram-review
+Group=arkgram-review
+WorkingDirectory=/opt/arkgram-review
+EnvironmentFile=/etc/arkgram-review.env
+ExecStart=/opt/arkgram-review/venv/bin/python server.py
+Restart=on-failure
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/arkgram-review
+
+[Install]
+WantedBy=multi-user.target

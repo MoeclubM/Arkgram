@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ArkGram review account setup</title>
+<style>
+body{font:16px/1.6 system-ui,sans-serif;max-width:620px;margin:48px auto;padding:0 24px;color:#18314b;background:#f4f7fb}h1{font-size:28px}section{background:white;border:1px solid #dbe4ee;border-radius:16px;padding:20px;margin:18px 0}button,input{font:inherit;padding:10px 14px;border:1px solid #b8c9da;border-radius:8px}button{background:#1769aa;color:white;cursor:pointer}input{box-sizing:border-box;width:100%;margin:8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#52677d}
+</style>
+<h1>Set up the review account</h1>
+<p>Owner access only. This signs a real Telegram account into this server so it can approve reviewer devices.</p>
+<section><h2>1. Request a login code</h2><p>The destination phone number is fixed by the server configuration.</p><button id="send">Send Telegram code</button></section>
+<section><h2>2. Enter the code</h2><form id="code-form"><label for="code">Code received from Telegram</label><input id="code" autocomplete="one-time-code" inputmode="numeric" required><button>Sign in</button></form></section>
+<section><h2>3. Two-step verification, if requested</h2><form id="password-form"><label for="password">Telegram two-step verification password</label><input id="password" type="password" autocomplete="current-password" required><button>Complete sign-in</button></form></section>
+<section><h2>Server response</h2><pre id="result" role="status">Checking account status...</pre><button id="status">Refresh status</button></section>
+<small>Do not share owner credentials with reviewers. Login codes and the Telegram password are sent over HTTPS and are not saved in application configuration.</small>
+<script>
+const result=document.getElementById('result');
+async function call(path,data){
+ try{
+  const response=await fetch(path,data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const body=await response.text();
+  result.textContent=`HTTP ${response.status}\n${body}`;
+ }catch(error){result.textContent=error.toString();}
+}
+document.getElementById('send').onclick=()=>call('send-code',{});
+document.getElementById('status').onclick=()=>call('status');
+document.getElementById('code-form').onsubmit=async event=>{event.preventDefault();const input=document.getElementById('code');await call('sign-in',{code:input.value});input.value='';};
+document.getElementById('password-form').onsubmit=async event=>{event.preventDefault();const input=document.getElementById('password');await call('password',{password:input.value});input.value='';};
+call('status');
+</script>
+</html>

@@ -1,0 +1,35 @@
+name: ArkGram review login service
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Tools/review-login/**'
+      - '.github/workflows/review-login.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install service dependencies
+        run: python -m pip install --only-binary=:all: -r Tools/review-login/requirements.txt
+      - name: Verify service authentication and real unauthorized MTProto connection
+        run: python -m unittest discover -s Tools/review-login/tests -v
+      - name: Check browser script syntax
+        run: |
+          python - <<'PY'
+          import re
+          import subprocess
+          from pathlib import Path
+          for page in Path('Tools/review-login').glob('*.html'):
+              script = re.search(r'<script>(.*?)</script>', page.read_text(encoding='utf-8'), re.S).group(1)
+              subprocess.run(['node', '--check'], input=script, text=True, check=True)
+              print(f'{page.name}: script syntax valid')
+          PY

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ArkGram reviewer device authorization</title>
+<style>body{font:16px/1.6 system-ui,sans-serif;max-width:620px;margin:48px auto;padding:0 24px;color:#18314b;background:#f4f7fb}section{background:white;border:1px solid #dbe4ee;border-radius:16px;padding:24px}input,button{font:inherit;padding:12px;border:1px solid #b8c9da;border-radius:8px}input{box-sizing:border-box;width:100%;margin:12px 0}button{background:#1769aa;color:white;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>
+<h1>Authorize an ArkGram review device</h1>
+<p>This grants a real Telegram session on the configured review account. It does not load offline sample data.</p>
+<section><form id="authorize"><label for="token">Fresh Telegram login token from the client</label><input id="token" placeholder="tg://login?token=... or base64url token" autocomplete="off" required><button>Authorize this device</button></form><pre id="result" role="status"></pre></section>
+<p>The Android client must support exporting QR login tokens. The owner setup page is separate from this reviewer page.</p>
+<script>
+document.getElementById('authorize').onsubmit=async event=>{
+ event.preventDefault();const result=document.getElementById('result');
+ try{
+  const response=await fetch('api/authorize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:document.getElementById('token').value})});
+  result.textContent=`HTTP ${response.status}\n${await response.text()}`;
+ }catch(error){result.textContent=error.toString();}
+};
+</script>
+</html>
