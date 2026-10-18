@@ -2,6 +2,11 @@ name: ArkGram review login service
 
 on:
   workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: Optional deployed HTTPS service base URL, including trailing slash
+        type: string
+        default: ''
   push:
     paths:
       - 'Tools/review-login/**'
@@ -34,6 +39,30 @@ jobs:
               script = re.search(r'<script>(.*?)</script>', page.read_text(encoding='utf-8'), re.S).group(1)
               subprocess.run(['node', '--check'], input=script, text=True, check=True)
               print(f'{page.name}: script syntax valid')
+          PY
+      - name: Verify the deployed HTTPS service
+        if: inputs.deployment_url != ''
+        env:
+          REVIEW_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from urllib.error import HTTPError
+          from urllib.request import urlopen
+          base = os.environ['REVIEW_DEPLOYMENT_URL']
+          with urlopen(base + 'healthz', timeout=30) as response:
+              assert response.status == 200
+              assert json.load(response)['telegram_connected'] is True
+          for path in ['admin/', 'api/status']:
+              try:
+                  urlopen(base + path, timeout=30)
+              except HTTPError as error:
+                  assert error.code == 401, (path, error.code)
+                  assert 'Basic' in error.headers['WWW-Authenticate']
+              else:
+                  raise AssertionError(f'{path} did not require credentials')
+          print('HTTPS health and protected owner/reviewer endpoints verified.')
           PY
       - uses: actions/upload-artifact@v7.0.1
         with:

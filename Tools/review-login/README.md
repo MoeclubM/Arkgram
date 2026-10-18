@@ -6,7 +6,8 @@ key with clients, read chats or accept a fixed Telegram SMS code.
 
 ## Configuration and deployment
 
-Install `requirements.txt` into `/opt/arkgram-review/venv` and copy this directory
+On Debian, install the matching `python3-venv` package first. Install
+`requirements.txt` into `/opt/arkgram-review/venv` and copy this directory
 to `/opt/arkgram-review`. Run the supplied systemd service as `arkgram-review`.
 The writable Telegram session directory is `/var/lib/arkgram-review`.
 Telethon's pure Python `pyaes` dependency is distributed as source, so the workflow
@@ -69,6 +70,8 @@ unauthorized Telegram connection, HTTP authentication, input errors and explicit
 not-ready responses. It never requests an account login code or sends messages.
 Owner sign-in and real token acceptance must additionally be verified against
 the deployed service after the owner initializes the account.
+Pass the deployed base URL to the workflow's `deployment_url` input to verify
+public HTTPS health and that owner/reviewer endpoints require credentials.
 
 References:
 - https://core.telegram.org/api/qr-login
