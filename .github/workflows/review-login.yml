@@ -11,6 +11,10 @@ on:
         description: Verify a real account login and log out the temporary CI session
         type: boolean
         default: false
+      verify_ai_provider:
+        description: Verify the private reviewer AI configuration with a real translation
+        type: boolean
+        default: false
   push:
     paths:
       - 'Tools/review-login/**'
@@ -79,3 +83,8 @@ jobs:
           REVIEW_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
           REVIEW_ACCESS_CODE: ${{ secrets.ARKGRAM_REVIEW_ACCESS_CODE }}
         run: python Tools/review-login/verify_authorization.py
+      - name: Verify the reviewer AI provider
+        if: inputs.verify_ai_provider
+        env:
+          REVIEW_AI_CONFIG: ${{ secrets.ARKGRAM_REVIEW_AI }}
+        run: python Tools/review-login/verify_ai_provider.py
