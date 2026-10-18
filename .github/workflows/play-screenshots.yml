@@ -7,6 +7,10 @@ on:
         description: Optional successful release run whose signed Play bundle should be verified
         type: string
         default: ''
+      ui_apk_run_id:
+        description: Optional successful UI build run whose emulator APK should be reused
+        type: string
+        default: ''
       verify_reviewer_login:
         description: Verify real Android reviewer sign-in and log out the temporary device
         type: boolean
@@ -31,15 +35,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6.1.0
-        if: inputs.release_run_id == ''
+        if: inputs.release_run_id == '' && inputs.ui_apk_run_id == ''
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
       - uses: android-actions/setup-android@v4.0.1
-        if: inputs.release_run_id == ''
+        if: inputs.release_run_id == '' && inputs.ui_apk_run_id == ''
         with:
           packages: 'platforms;android-36 build-tools;36.0.0 ndk;27.2.12479018 cmake;3.22.1'
       - name: Build release UI for the x86_64 emulator
-        if: inputs.release_run_id == ''
+        if: inputs.release_run_id == '' && inputs.ui_apk_run_id == ''
         run: |
           sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           printf 'sdk.dir=%s\n' "$sdk_root" > local.properties
@@ -48,6 +52,22 @@ jobs:
           chmod +x gradlew
           ./gradlew :TMessagesProj_App:assembleAfatRelease -PCI_ABI_FILTERS=x86_64 --build-cache --configuration-cache --stacktrace
           cp TMessagesProj_App/build/outputs/apk/afat/release/*.apk universal.apk
+          ./gradlew --stop
+      - name: Download the CI emulator APK
+        if: inputs.ui_apk_run_id != ''
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: ArkGram-Play-UI-apk
+          path: .
+          run-id: ${{ inputs.ui_apk_run_id }}
+          github-token: ${{ github.token }}
+      - name: Preserve emulator APK for UI-only reruns
+        if: inputs.release_run_id == '' && inputs.ui_apk_run_id == ''
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ArkGram-Play-UI-apk
+          path: universal.apk
+          if-no-files-found: error
       - name: Download the signed Play bundle
         if: inputs.release_run_id != ''
         uses: actions/download-artifact@v8.0.2
