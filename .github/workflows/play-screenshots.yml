@@ -3,6 +3,11 @@ name: ArkGram Play screenshots
 on:
   workflow_dispatch:
     inputs:
+      host_os:
+        description: Hosted CI machine for emulator comparison
+        type: choice
+        options: [ubuntu-latest, macos-15-intel]
+        default: ubuntu-latest
       release_run_id:
         description: Optional successful release run whose signed Play bundle should be verified
         type: string
@@ -22,7 +27,7 @@ permissions:
 
 jobs:
   capture:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.host_os }}
     env:
       ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
@@ -86,6 +91,7 @@ jobs:
           java -jar bundletool-all-1.18.3.jar build-apks --bundle=play-bundle/TMessagesProj_App-bundleAfat-release.aab --output=play.apks --mode=universal --ks=TMessagesProj/config/release.keystore --ks-key-alias="$release_alias" --ks-pass="pass:$ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD" --key-pass="pass:$ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD"
           unzip -p play.apks universal.apk > universal.apk
       - name: Enable emulator acceleration
+        if: runner.os == 'Linux'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -108,7 +114,7 @@ jobs:
             if [ "${{ inputs.verify_reviewer_login }}" = "true" ]; then test -n "$REVIEW_LOGIN_CODE"; python3 Tools/ci/verify_reviewer_login.py; fi
             python3 Tools/ci/capture_review_demo.py
       - name: Report emulator host diagnostics
-        if: always()
+        if: always() && runner.os == 'Linux'
         run: |
           free -h
           df -h /
