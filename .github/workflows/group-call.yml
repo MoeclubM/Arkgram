@@ -7,6 +7,7 @@ on:
       - 'TMessagesProj/src/main/java/org/telegram/messenger/voip/**'
       - 'TMessagesProj_AppTests/src/androidTest/java/org/telegram/messenger/voip/**'
       - '.github/workflows/group-call.yml'
+      - 'Tools/ci/test_group_call.sh'
   workflow_dispatch:
     inputs:
       baseline_ref:
@@ -45,7 +46,7 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
       - uses: android-actions/setup-android@v4.0.1
         with:
-          packages: 'platforms;android-36 platforms;android-37 build-tools;36.0.0 ndk;27.2.12479018 cmake;3.22.1'
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;27.2.12479018 cmake;3.22.1'
       - name: Prepare CI signing and build the instrumentation APKs
         run: |
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
@@ -67,13 +68,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: |
-            adb install -r TMessagesProj_AppTests/build/outputs/apk/afat/debug/*.apk
-            adb shell pm grant moe.telecom.arkgram.web android.permission.RECORD_AUDIO
-            ./gradlew :TMessagesProj_AppTests:connectedAfatDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=org.telegram.messenger.voip.GroupCallInitializationTest --stacktrace
-      - name: Collect emulator crash output
-        if: always()
-        run: adb logcat -d -b crash > group-call-crash.log
+          script: bash Tools/ci/test_group_call.sh
       - uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
