@@ -2,11 +2,6 @@ name: ArkGram Play screenshots
 
 on:
   workflow_dispatch:
-    inputs:
-      release_run_id:
-        description: Successful release workflow run containing the Play AAB
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -16,29 +11,31 @@ jobs:
   capture:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
-      RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+      ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          submodules: recursive
       - uses: actions/setup-java@v5.2.0
         with:
           distribution: temurin
           java-version: '17'
-      - name: Download Play release bundle without unpacking the AAB
-        uses: actions/download-artifact@v8
+      - uses: gradle/actions/setup-gradle@v6.1.0
         with:
-          name: TMessagesProj_App-bundleAfat-release.aab
-          run-id: ${{ inputs.release_run_id }}
-          github-token: ${{ github.token }}
-          path: bundle
-          skip-decompress: true
-      - name: Prepare emulator APK with a temporary debug key
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+      - uses: android-actions/setup-android@v4.0.1
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;27.2.12479018 cmake;3.22.1'
+      - name: Build release UI for the x86_64 emulator
         run: |
-          gh release download --repo google/bundletool --pattern 'bundletool-all-*.jar' --dir bundletool
-          keytool -genkeypair -keystore screenshot.jks -storepass android -keypass android -alias androiddebugkey -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 365
-          bundle_path=(bundle/*.aab)
-          java -jar bundletool/bundletool-all-*.jar build-apks --bundle="${bundle_path[0]}" --output=app.apks --mode=universal --ks=screenshot.jks --ks-pass=pass:android --key-pass=pass:android --ks-key-alias=androiddebugkey
-          unzip -j app.apks universal.apk
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          printf 'sdk.dir=%s\n' "$sdk_root" > local.properties
+          release_alias="$(keytool -list -keystore TMessagesProj/config/release.keystore -storepass "$ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD" | awk -F, '/PrivateKeyEntry/ {print $1; exit}')"
+          export ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS="$release_alias"
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_App:assembleAfatRelease -PCI_ABI_FILTERS=x86_64 --build-cache --configuration-cache --stacktrace
+          cp TMessagesProj_App/build/outputs/apk/afat/release/*.apk universal.apk
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
