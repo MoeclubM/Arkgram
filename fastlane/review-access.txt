@@ -9,6 +9,25 @@ The demo is explicitly labelled. Its chats, contacts and profile contain local s
 
 The offline demo does not provide Telegram network messaging or calls. Those functions require a real Telegram login. Full review access must be validated before submitting the App access declaration; these demo instructions alone do not establish access to every network feature.
 
+Official Telegram test server verification (2026-10-18)
+
+The CI probe uses this application's API credentials, an in-memory MTProto session and the documented 99966XYYYY phone number format. Each run requests a code once and submits one explicit fixed-code variant. It does not register accounts or send messages.
+
+All four runs confirmed server_test_mode=true and received SentCodeTypeSms with code_length=5. Sign-in returned PHONE_CODE_INVALID in every case:
+- DC1, five-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104823272
+- DC2, five-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104230920
+- DC2, six-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104419192
+- DC3, five-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104826186
+
+The documented random-number/fixed-code method is not validated for this application and cannot currently serve as review access. The release login screen has not been changed to expose the test backend. Existing registered test accounts have not been tested, and no Android login or network-feature review has been completed through this method.
+
+Sources checked on 2026-10-18:
+- Telegram still documents the five-digit fixed code and warns that test data is periodically wiped: https://core.telegram.org/api/auth#test-accounts
+- gotd recorded in June 2026 that random 99966X test accounts no longer auto-provision and return PHONE_CODE_INVALID, requiring a pre-registered test account: https://github.com/gotd/td/commit/5f15d63175eb10bf45bbeeb2aa539c8cd184b65e
+- Google Play requires reusable, always-accessible credentials and access to all app functionality: https://support.google.com/googleplay/android-developer/answer/15748846?hl=en
+
+Next review-access options require a separately validated account: an existing registered Telegram test account, or a dedicated production Telegram account with a reviewer-accessible way to obtain login codes. Neither option is implemented or claimed to meet the App access declaration yet. A dedicated production account should contain only review data. AI provider access also remains to be validated separately.
+
 Public support: https://www.telecom.moe/arkgram/
 Privacy policy: https://www.telecom.moe/arkgram/privacy/
 Account and data deletion: https://www.telecom.moe/arkgram/delete-account/

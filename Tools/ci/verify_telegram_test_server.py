@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from telethon import TelegramClient, functions, types
+from telethon.errors import RPCError
 
 source = Path('TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java').read_text(encoding='utf-8')
 api_id = int(re.search(r'APP_ID\s*=\s*(\d+)', source).group(1))
@@ -51,6 +52,12 @@ async def main():
             assert user.id == authorization.user.id
             result['status'] = 'authorized_with_fixed_code'
             await client(functions.auth.LogOutRequest())
+    except RPCError as error:
+        result['failed_stage'] = result['status']
+        result['status'] = 'failed'
+        result['rpc_error'] = {'type': type(error).__name__, 'code': error.code,
+                               'message': error.message}
+        raise
     finally:
         await client.disconnect()
         Path('telegram-test-server-result.json').write_text(
