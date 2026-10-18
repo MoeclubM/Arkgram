@@ -14,8 +14,14 @@ strings = {item.attrib['name']: ''.join(item.itertext()) for item in ET.parse(
 def screen(name, expected):
     deadline = time.monotonic() + 90
     while True:
-        subprocess.run(['adb', 'shell', 'uiautomator', 'dump', '/sdcard/arkgram-window.xml'], check=True,
-                       stdout=subprocess.DEVNULL)
+        dump = subprocess.run(['adb', 'shell', 'uiautomator', 'dump', '/sdcard/arkgram-window.xml'], check=True,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if b'ERROR: null root node' in dump.stdout:
+            print('Waiting for the Android accessibility tree: null root node.', flush=True)
+            if time.monotonic() >= deadline:
+                raise AssertionError('Android accessibility tree did not become available')
+            time.sleep(1)
+            continue
         xml = subprocess.check_output(['adb', 'shell', 'cat', '/sdcard/arkgram-window.xml'])
         tree = ET.fromstring(xml)
         if any(node.get('text', '').casefold() == expected.casefold()
@@ -53,8 +59,10 @@ if __name__ == '__main__':
     tap(welcome, strings['StartMessaging'])
     login = screen('02-login', strings['ReviewDemoEntry'])
     tap(login, strings['ReviewDemoEntry'])
-    chats = screen('03-offline-demo', strings['ReviewDemoContactOne'])
-    tap(chats, strings['ReviewDemoContactOne'])
+    chats = screen('03-offline-demo', strings['ReviewDemoTitle'])
+    tap(chats, strings['MainTabsContacts'])
+    contacts = screen('03-demo-contacts', strings['ReviewDemoContactOne'])
+    tap(contacts, strings['ReviewDemoContactOne'])
     screen('04-sample-conversation', strings['ReviewDemoContactOne'])
     subprocess.run(['adb', 'shell', 'input', 'keyevent', '4'], check=True)
     chats = screen('05-demo-tabs', strings['Settings'])
