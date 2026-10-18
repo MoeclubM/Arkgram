@@ -11,7 +11,7 @@ The fixed review code is not included in the application or this public file and
 
 AI and translation providers
 
-External AI features use a provider, model and API key configured under Settings > ArkGram Settings > LLM. A real Telegram account does not supply external-provider credits. Review provider credentials and exact model instructions must be validated and supplied separately before claiming access to all features.
+External AI features use a provider, model and API key configured under Settings > ArkGram > LLM. A real Telegram account does not supply external-provider credits. Review provider credentials and exact model instructions must be validated and supplied separately before claiming access to all features.
 
 Additional offline demo
 
@@ -19,9 +19,9 @@ Entering the fictional number +1 202-555-0100 on the normal phone number screen 
 
 Validation status (2026-10-18)
 
-- Real service authorization and new Telegram device login passed in CI; the temporary CI session was logged out: https://github.com/MoeclubM/Arkgram/actions/runs/39109364306
-- Signed Android release bundle and native 16 KB page checks passed: https://github.com/MoeclubM/Arkgram/actions/runs/39109406554
-- Android reviewer sign-in and logout UI verification is pending: https://github.com/MoeclubM/Arkgram/actions/runs/39126322858
+- Account alias and fixed-code authentication, real Telegram device login/logout and external AI translation passed in CI: https://github.com/MoeclubM/Arkgram/actions/runs/39131106086
+- Updated signed Android release bundle and native 16 KB page checks are pending: https://github.com/MoeclubM/Arkgram/actions/runs/39130934439
+- Android reviewer sign-in and logout UI verification is pending: https://github.com/MoeclubM/Arkgram/actions/runs/39131147859
 - The dedicated external AI provider completed a real translation in CI: https://github.com/MoeclubM/Arkgram/actions/runs/39128594451 . Android provider UI verification remains pending. Telegram Premium is not included in this review account; it is a separate upstream service, not an ArkGram enhancement.
 
 Public support: https://www.telecom.moe/arkgram/
