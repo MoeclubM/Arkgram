@@ -105,6 +105,13 @@ jobs:
             adb install -g universal.apk
             if [ "${{ inputs.verify_reviewer_login }}" = "true" ]; then test -n "$REVIEW_LOGIN_CODE"; python3 Tools/ci/verify_reviewer_login.py; fi
             python3 Tools/ci/capture_review_demo.py
+      - name: Report emulator host diagnostics
+        if: always()
+        run: |
+          free -h
+          df -h /
+          ps -eo comm,rss --sort=-rss | head -n 12
+          sudo dmesg --ctime | tail -n 80
       - name: Upload screenshots and UI hierarchy
         if: always()
         uses: actions/upload-artifact@v7.0.1
