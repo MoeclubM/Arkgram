@@ -4030,6 +4030,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             reviewLogin = activityMode == MODE_LOGIN && ReviewLoginRequest.PHONE.equals(params.getString("phoneFormated"));
+            if (activityMode == MODE_LOGIN && currentType == AUTH_TYPE_MESSAGE) {
+                titleTextView.setText(getString(reviewLogin ? R.string.YourCode : R.string.SentAppCodeTitle));
+            }
             waitingForEvent = !reviewLogin;
             if (currentType == AUTH_TYPE_FRAGMENT_SMS) {
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didReceiveSmsCode);
