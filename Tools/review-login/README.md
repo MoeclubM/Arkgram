@@ -96,7 +96,7 @@ Set `verify_authorization=true` to verify real device authorization using the
 private `ARKGRAM_REVIEW_ACCESS_CODE` (status API) and `ARKGRAM_REVIEW_LOGIN_CODE`
 (Android verification code) CI secrets, then log out the temporary device.
 The Play screenshots workflow's `verify_reviewer_login` input additionally checks
-the real Android entry and logout. It saves only offline-demo screenshots; real
+the real Android entry and logout. It saves only unauthenticated login pages and offline-demo screenshots; real
 account screens and UI dumps must never be uploaded as artifacts.
 
 References:

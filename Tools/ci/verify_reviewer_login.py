@@ -1,4 +1,4 @@
-"""Exercise the release Android login UI; never save account screens or UI dumps."""
+"""Exercise the release Android login UI; save only unauthenticated pages, never account screens or codes."""
 import os
 import subprocess
 
@@ -7,9 +7,9 @@ from capture_review_demo import enter_phone, screen, strings, tap
 subprocess.run(['adb', 'shell', 'pm', 'clear', 'moe.telecom.arkgram'], check=True)
 subprocess.run(['adb', 'shell', 'am', 'start', '-W', '-n',
                 'moe.telecom.arkgram/org.telegram.ui.LaunchActivity'], check=True)
-tap(screen(None, strings['StartMessaging']), strings['StartMessaging'])
-enter_phone('12025550101')
-code_page = screen(None, strings['ReviewLoginInfo'])
+tap(screen('01-review-welcome', strings['StartMessaging']), strings['StartMessaging'])
+enter_phone('12025550101', '02-review-phone')
+code_page = screen('03-review-code', strings['ReviewLoginInfo'])
 field = next(node for node in code_page.iter('node') if node.get('class') == 'android.widget.EditText')
 tap(field, field.get('text', ''))
 subprocess.run(['adb', 'shell', 'input', 'text', os.environ['REVIEW_LOGIN_CODE']], check=True)
