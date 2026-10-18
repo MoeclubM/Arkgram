@@ -24,12 +24,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Download release bundle and bundletool
+      - name: Download Play release bundle without unpacking the AAB
+        uses: actions/download-artifact@v8
+        with:
+          name: TMessagesProj_App-bundleAfat-release.aab
+          run-id: ${{ inputs.release_run_id }}
+          github-token: ${{ github.token }}
+          path: bundle
+          skip-decompress: true
+      - name: Prepare emulator APK with a temporary debug key
         run: |
-          gh run download "$RELEASE_RUN_ID" --name TMessagesProj_App-bundleAfat-release.aab --dir bundle
           gh release download --repo google/bundletool --pattern 'bundletool-all-*.jar' --dir bundletool
+          keytool -genkeypair -keystore screenshot.jks -storepass android -keypass android -alias androiddebugkey -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 365
           bundle_path=(bundle/*.aab)
-          java -jar bundletool/bundletool-all-*.jar build-apks --bundle="${bundle_path[0]}" --output=app.apks --mode=universal
+          java -jar bundletool/bundletool-all-*.jar build-apks --bundle="${bundle_path[0]}" --output=app.apks --mode=universal --ks=screenshot.jks --ks-pass=pass:android --key-pass=pass:android --ks-key-alias=androiddebugkey
           unzip -j app.apks universal.apk
       - name: Enable emulator acceleration
         run: |
