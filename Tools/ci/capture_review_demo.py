@@ -22,6 +22,10 @@ def screen(name, expected):
                or node.get('content-desc', '').casefold() == expected.casefold() for node in tree.iter('node')):
             break
         if time.monotonic() >= deadline:
+            if name:
+                (output / (name + '-failed.xml')).write_bytes(xml)
+                (output / (name + '-failed.png')).write_bytes(subprocess.check_output(['adb', 'exec-out', 'screencap', '-p']))
+                (output / 'crash.log').write_bytes(subprocess.check_output(['adb', 'logcat', '-b', 'crash', '-d']))
             raise AssertionError('UI did not reach: ' + expected)
         time.sleep(1)
     if name:
