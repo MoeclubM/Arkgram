@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -119,14 +120,22 @@ public class ReviewDemoActivity extends BaseFragment {
                 content.addView(cell);
             }
         } else if (position == 2) {
-            int[] labels = {R.string.FlexSettings, R.string.FlexLlmSettings, R.string.FlexTranslationSettings, R.string.FlexAdBlockSettings};
+            int[] labels = {R.string.FlexSettings, R.string.FlexLlmSettings, R.string.FlexTranslationSettings, R.string.FlexAdBlockSettings,
+                    R.string.PrivacyPolicy, R.string.ArkGramAccountDeletion};
             for (int i = 0; i < labels.length; i++) {
                 final int index = i;
                 TextSettingsCell cell = new TextSettingsCell(context);
                 cell.setText(getString(labels[i]), true);
-                cell.setOnClickListener(v -> presentFragment(index == 0 ? new FlexSettingsActivity()
-                        : index == 1 ? new FlexLlmSettingsActivity()
-                        : index == 2 ? new FlexTranslateSettingsActivity() : new FlexAdBlockSettingsActivity()));
+                cell.setOnClickListener(v -> {
+                    if (index >= 4) {
+                        Browser.openUrl(getParentActivity(), context.getString(index == 4
+                                ? R.string.ArkGramPrivacyPolicyUrl : R.string.ArkGramAccountDeletionUrl));
+                    } else {
+                        presentFragment(index == 0 ? new FlexSettingsActivity()
+                                : index == 1 ? new FlexLlmSettingsActivity()
+                                : index == 2 ? new FlexTranslateSettingsActivity() : new FlexAdBlockSettingsActivity());
+                    }
+                });
                 content.addView(cell);
             }
         } else {

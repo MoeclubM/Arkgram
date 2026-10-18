@@ -197,4 +197,5 @@
     <string name="FlexOfficialAiInfo">为校对、改写、消息摘要和文章生成选择 Telegram 或已配置的模型。外部服务会接收选中的文本，使用该服务自身的额度；翻译使用单独的提供商设置。不会自动切换提供商。</string>
     <string name="FlexAiSourceMissing">本地没有原始消息，请先打开消息加载内容后重试。</string>
     <string name="FlexAiToneMissing">外部模型无法读取此 Telegram 风格的提示词，请选择内置风格或输入自定义提示词。</string>
+    <string name="ArkGramAccountDeletion">账号与数据删除</string>
 </resources>

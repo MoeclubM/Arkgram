@@ -8,3 +8,8 @@ Offline demo access
 The demo is explicitly labelled. Its chats, contacts and profile contain local sample data. Demo messages are never sent to Telegram and disappear when the conversation screen is closed. Settings screens use the real application settings.
 
 The offline demo does not provide Telegram network messaging or calls. Those functions require a real Telegram login. Full review access must be validated before submitting the App access declaration; these demo instructions alone do not establish access to every network feature.
+
+Public support: https://www.telecom.moe/arkgram/
+Privacy policy: https://www.telecom.moe/arkgram/privacy/
+Account and data deletion: https://www.telecom.moe/arkgram/delete-account/
+Support email: moecaa@telecom.moe

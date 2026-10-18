@@ -11472,4 +11472,7 @@
     <string name="FlexOfficialAiInfo">Choose Telegram or a configured model for proofreading, rewriting, message summaries and article generation. External services receive the selected text and use their own quota. Translation uses its separate provider setting. Providers are never switched automatically.</string>
     <string name="FlexAiSourceMissing">The original message is not available locally. Open the message to load it before retrying.</string>
     <string name="FlexAiToneMissing">The prompt for this Telegram style is not available to external models. Use a built-in style or enter a custom prompt.</string>
+    <string name="ArkGramAccountDeletion">Account and data deletion</string>
+    <string name="ArkGramPrivacyPolicyUrl" translatable="false">https://www.telecom.moe/arkgram/privacy/</string>
+    <string name="ArkGramAccountDeletionUrl" translatable="false">https://www.telecom.moe/arkgram/delete-account/</string>
 </resources>
