@@ -1,0 +1,24 @@
+name: Telegram test server verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Install MTProto client
+        run: python3 -m pip install telethon==1.45.0
+      - name: Verify official test DC and fixed login code
+        run: python3 Tools/ci/verify_telegram_test_server.py
+      - name: Upload verification result
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: Telegram-test-server-result
+          path: telegram-test-server-result.json
+          if-no-files-found: error
