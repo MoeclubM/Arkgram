@@ -7,6 +7,10 @@ on:
         description: Optional deployed HTTPS service base URL, including trailing slash
         type: string
         default: ''
+      verify_authorization:
+        description: Verify a real account login and log out the temporary CI session
+        type: boolean
+        default: false
   push:
     paths:
       - 'Tools/review-login/**'
@@ -69,3 +73,9 @@ jobs:
           name: ArkGram-review-login-pure-wheels
           path: pure-wheels/
           if-no-files-found: error
+      - name: Verify real account device authorization
+        if: inputs.verify_authorization
+        env:
+          REVIEW_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          REVIEW_ACCESS_CODE: ${{ secrets.ARKGRAM_REVIEW_ACCESS_CODE }}
+        run: python Tools/review-login/verify_authorization.py

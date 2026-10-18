@@ -139,6 +139,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.PasskeysController;
 import org.telegram.messenger.PushListenerController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.ReviewLoginRequest;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -509,6 +510,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (reviewLoginRequest != null) {
+            reviewLoginRequest.cancel();
+            reviewLoginRequest = null;
+        }
         for (int a = 0; a < views.length; a++) {
             if (views[a] != null) {
                 views[a].onDestroyActivity();
@@ -1647,6 +1652,73 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private boolean pendingSwitchingAccount;
+    private ReviewLoginRequest reviewLoginRequest;
+
+    private void showReviewLogin() {
+        if (reviewLoginRequest != null) return;
+        EditTextBoldCursor accessCode = new EditTextBoldCursor(getParentActivity());
+        accessCode.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        accessCode.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        accessCode.setHintTextColor(getThemedColor(Theme.key_dialogTextHint));
+        accessCode.setHint(getString(R.string.ReviewLoginAccessCode));
+        accessCode.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        accessCode.setSingleLine(true);
+        accessCode.setSaveEnabled(false);
+        LinearLayout container = new LinearLayout(getParentActivity());
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.addView(accessCode, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 24, 0, 24, 12));
+        AlertDialog dialog = new AlertDialog.Builder(getParentActivity())
+                .setTitle(getString(R.string.ReviewLoginEntry))
+                .setMessage(getString(R.string.ReviewLoginInfo))
+                .setView(container)
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .setPositiveButton(getString(R.string.Continue), (ignored, which) -> {
+                    String code = accessCode.getText().toString().trim();
+                    accessCode.setText("");
+                    AndroidUtilities.hideKeyboard(accessCode);
+                    if (code.isEmpty()) {
+                        needShowAlert(getString(R.string.ErrorOccurred), getString(R.string.ReviewLoginAccessCode));
+                        return;
+                    }
+                    needShowProgress(0);
+                    reviewLoginRequest = new ReviewLoginRequest(currentAccount, classGuid, code, (authorization, error) -> {
+                        reviewLoginRequest = null;
+                        needHideProgress(false);
+                        if (authorization != null) {
+                            onAuthSuccess(authorization);
+                        } else if ("SESSION_PASSWORD_NEEDED".equals(error.text)) {
+                            TL_account.getPassword request = new TL_account.getPassword();
+                            int id = getConnectionsManager().sendRequest(request, (response, passwordError) -> AndroidUtilities.runOnUIThread(() -> {
+                                needHideProgress(false);
+                                if (passwordError != null) {
+                                    needShowAlert(getString(R.string.ErrorOccurred), passwordError.text);
+                                    return;
+                                }
+                                TL_account.Password password = (TL_account.Password) response;
+                                if (!TwoStepVerificationActivity.canHandleCurrentPassword(password, true)) {
+                                    AlertsCreator.showUpdateAppAlert(getParentActivity(), getString(R.string.UpdateAppAlert), true);
+                                    return;
+                                }
+                                SerializedData data = new SerializedData(password.getObjectSize());
+                                password.serializeToStream(data);
+                                Bundle params = new Bundle();
+                                params.putString("password", Utilities.bytesToHex(data.toByteArray()));
+                                data.cleanup();
+                                setPage(VIEW_PASSWORD, true, params, false);
+                            }), ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
+                            getConnectionsManager().bindRequestToGuid(id, classGuid);
+                            needShowProgress(id);
+                        } else {
+                            needShowAlert(getString(R.string.ErrorOccurred), error.text);
+                        }
+                    });
+                    reviewLoginRequest.start();
+                }).create();
+        showDialog(dialog);
+        accessCode.requestFocus();
+        AndroidUtilities.showKeyboard(accessCode);
+    }
 
     private void onAuthSuccess(TLRPC.TL_auth_authorization res, boolean afterSignup) {
         MessagesController.getInstance(currentAccount).cleanup();
@@ -2404,6 +2476,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     presentFragment(new ReviewDemoActivity());
                 });
                 addView(demo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                TextView reviewer = new TextView(context);
+                reviewer.setText(getString(R.string.ReviewLoginEntry));
+                reviewer.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                reviewer.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+                reviewer.setGravity(Gravity.CENTER);
+                reviewer.setPadding(dp(16), dp(12), dp(16), dp(12));
+                reviewer.setOnClickListener(v -> {
+                    AndroidUtilities.hideKeyboard(phoneField);
+                    showReviewLogin();
+                });
+                addView(reviewer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             }
 
             int bottomMargin = 72;

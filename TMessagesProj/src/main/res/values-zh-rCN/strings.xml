@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="ReviewLoginEntry">审核账号登录</string>
+    <string name="ReviewLoginAccessCode">审核访问码</string>
+    <string name="ReviewLoginInfo">请输入审核说明中提供的访问码。应用将通过 oracle-osa-01.telecom.moe 登录真实的 Telegram 审核账号。访问码不会保存。</string>
     <string name="ReviewDemoTitle">ArkGram 演示</string>
     <string name="ReviewDemoOffline">离线样例账号</string>
     <string name="ReviewDemoEntry">体验离线演示 · +1 202-555-0100</string>
