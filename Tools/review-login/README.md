@@ -62,10 +62,11 @@ username `reviewer`. The reviewer webpage at `/arkgram-review/` uses HTTP Basic.
 Browser POSTs require JSON so a cross-site HTML form cannot trigger an account
 operation using cached HTTP Basic credentials. The service does not enable CORS.
 
-Android still needs a visible reviewer login entry that exports its own token,
-submits it to this API, and completes Telegram's official QR login flow (including
-DC migration and any required two-step verification). Deploying this server alone
-does not add this entry or prove that Google Play can review every app feature.
+Android exposes "Reviewer sign-in" on its phone number screen. It exports its own
+token, submits it to this API and completes Telegram's official QR login flow,
+including DC migration and the existing two-step verification screen when needed.
+The reviewer access code stays in memory; only the service URL is shipped.
+See `fastlane/review-access.txt` for review steps and current validation status.
 
 ## Verification
 
@@ -76,6 +77,11 @@ Owner sign-in and real token acceptance must additionally be verified against
 the deployed service after the owner initializes the account.
 Pass the deployed base URL to the workflow's `deployment_url` input to verify
 public HTTPS health and that owner/reviewer endpoints require credentials.
+Set `verify_authorization=true` to verify real device authorization using the
+private `ARKGRAM_REVIEW_ACCESS_CODE` CI secret, then log out the temporary device.
+The Play screenshots workflow's `verify_reviewer_login` input additionally checks
+the real Android entry and logout. It saves only offline-demo screenshots; real
+account screens and UI dumps must never be uploaded as artifacts.
 
 References:
 - https://core.telegram.org/api/qr-login

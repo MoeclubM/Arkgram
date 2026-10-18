@@ -1,32 +1,28 @@
-Offline demo access
+Reviewer sign-in (real Telegram account)
 
-1. On the welcome screen, select Start Messaging.
-2. On the phone number screen, select "Try offline demo". Alternatively, enter country code +1 and phone number 2025550100, then continue.
-3. No password, SMS code or Telegram account is required for the offline demo.
-4. Explore Chats, Contacts, Settings and Profile. Open a sample conversation and send a local demonstration message.
+1. Launch ArkGram and select Start Messaging.
+2. On the phone number screen, select "Reviewer sign-in".
+3. Enter the reviewer access code supplied privately in Google Play Console's App access instructions, then select Continue.
+4. ArkGram creates a real Telegram device session for the dedicated review account. No SMS code, QR scanner or owner intervention is required.
+5. Use the application's regular chats, contacts and settings. This is the normal Telegram backend, not the offline demo.
+6. To sign out, open Settings, select More options, then Log out and confirm the logout.
 
-The demo is explicitly labelled. Its chats, contacts and profile contain local sample data. Demo messages are never sent to Telegram and disappear when the conversation screen is closed. Settings screens use the real application settings.
+The reviewer access code is not included in the application or this public file. Only the service URL is shipped. The account phone number, owner credentials and server Telegram session are not embedded in the application. If Telegram requires two-step verification, the application shows its regular password screen; any required password must also be supplied privately in Play Console.
 
-The offline demo does not provide Telegram network messaging or calls. Those functions require a real Telegram login. Full review access must be validated before submitting the App access declaration; these demo instructions alone do not establish access to every network feature.
+AI and translation providers
 
-Official Telegram test server verification (2026-10-18)
+External AI features use a provider, model and API key configured under Settings > ArkGram Settings > LLM. A real Telegram account does not supply external-provider credits. Review provider credentials and exact model instructions must be validated and supplied separately before claiming access to all features.
 
-The CI probe uses this application's API credentials, an in-memory MTProto session and the documented 99966XYYYY phone number format. Each run requests a code once and submits one explicit fixed-code variant. It does not register accounts or send messages.
+Additional offline demo
 
-All four runs confirmed server_test_mode=true and received SentCodeTypeSms with code_length=5. Sign-in returned PHONE_CODE_INVALID in every case:
-- DC1, five-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104823272
-- DC2, five-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104230920
-- DC2, six-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104419192
-- DC3, five-digit code: https://github.com/MoeclubM/Arkgram/actions/runs/39104826186
+On the phone number screen, "Try offline demo" opens clearly labelled local sample chats, contacts and profile. No Telegram account is required. Demo messages are never sent to Telegram. This demo is supplementary and does not replace the real reviewer sign-in instructions above.
 
-The documented random-number/fixed-code method is not validated for this application and cannot currently serve as review access. The release login screen has not been changed to expose the test backend. Existing registered test accounts have not been tested, and no Android login or network-feature review has been completed through this method.
+Validation status (2026-10-18)
 
-Sources checked on 2026-10-18:
-- Telegram still documents the five-digit fixed code and warns that test data is periodically wiped: https://core.telegram.org/api/auth#test-accounts
-- gotd recorded in June 2026 that random 99966X test accounts no longer auto-provision and return PHONE_CODE_INVALID, requiring a pre-registered test account: https://github.com/gotd/td/commit/5f15d63175eb10bf45bbeeb2aa539c8cd184b65e
-- Google Play requires reusable, always-accessible credentials and access to all app functionality: https://support.google.com/googleplay/android-developer/answer/15748846?hl=en
-
-Next review-access options require a separately validated account: an existing registered Telegram test account, or a dedicated production Telegram account with a reviewer-accessible way to obtain login codes. Neither option is implemented or claimed to meet the App access declaration yet. A dedicated production account should contain only review data. AI provider access also remains to be validated separately.
+- Real service authorization and new Telegram device login passed in CI; the temporary CI session was logged out: https://github.com/MoeclubM/Arkgram/actions/runs/39109364306
+- Signed Android release bundle and native 16 KB page checks passed: https://github.com/MoeclubM/Arkgram/actions/runs/39109406554
+- Android reviewer sign-in and logout UI verification is pending: https://github.com/MoeclubM/Arkgram/actions/runs/39126322858
+- External AI review configuration is still pending. Do not claim full feature access until the remaining validation is complete.
 
 Public support: https://www.telecom.moe/arkgram/
 Privacy policy: https://www.telecom.moe/arkgram/privacy/
