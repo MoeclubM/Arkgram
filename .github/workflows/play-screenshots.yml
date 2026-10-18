@@ -63,7 +63,7 @@ jobs:
         run: |
           gh release download 1.18.3 -R google/bundletool --pattern bundletool-all-1.18.3.jar
           release_alias="$(keytool -list -keystore TMessagesProj/config/release.keystore -storepass "$ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD" | awk -F, '/PrivateKeyEntry/ {print $1; exit}')"
-          java -jar bundletool-all-1.18.3.jar build-apks --bundle=play-bundle/TMessagesProj_App-bundleAfat-release.aab --output=play.apks --mode=universal --ks=TMessagesProj/config/release.keystore --ks-key-alias="$release_alias" --ks-pass=env:ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD --key-pass=env:ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD
+          java -jar bundletool-all-1.18.3.jar build-apks --bundle=play-bundle/TMessagesProj_App-bundleAfat-release.aab --output=play.apks --mode=universal --ks=TMessagesProj/config/release.keystore --ks-key-alias="$release_alias" --ks-pass="pass:$ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD" --key-pass="pass:$ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD"
           unzip -p play.apks universal.apk > universal.apk
       - name: Enable emulator acceleration
         run: |
