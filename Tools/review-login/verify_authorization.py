@@ -35,6 +35,7 @@ async def main():
         print('The deployed service accepted a real Telegram login token.', flush=True)
         user = await waiting
         assert '+' + user.phone == account['phone'], 'The new session must match the configured account'
+        print('Review account Telegram Premium access:', bool(user.premium), flush=True)
         await client(functions.auth.LogOutRequest())
         print('Real Telegram device login verified; the temporary CI session was logged out.', flush=True)
     finally:
