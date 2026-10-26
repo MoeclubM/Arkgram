@@ -104,6 +104,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.CastSync;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.PermissionRequest;
 import org.telegram.ui.Components.PhotoFilterView;
@@ -5099,8 +5100,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 FileLog.d("saving file: correcting path from " + path + " to " + (sourceFile == null ? null : sourceFile.getAbsolutePath()));
                             }
                             if (sourceFile != null && sourceFile.exists()) {
-                                saveFileInternal(isMusic ? 3 : 2, sourceFile, name);
-                                copiedFiles++;
+                                if (saveFileInternal(isMusic ? 3 : 2, sourceFile, name, message.getMimeType()) != null) {
+                                    copiedFiles++;
+                                }
                             }
                         }
                     } else {
@@ -5511,7 +5513,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     Uri uri;
                     boolean result = true;
                     if (Build.VERSION.SDK_INT >= 29) {
-                        uri = saveFileInternal(type, sourceFile, null);
+                        uri = saveFileInternal(type, sourceFile, name, mime);
                         result = uri != null;
                     } else {
                         File destFile;
@@ -5805,13 +5807,17 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 "<?xpacket end=\"w\"?>";
     }
 
-    private static Uri saveFileInternal(int type, File sourceFile, String filename) {
+    private static Uri saveFileInternal(int type, File sourceFile, String filename, String mimeType) {
+        ContentResolver resolver = ApplicationLoader.applicationContext.getContentResolver();
+        Uri dstUri = null;
         try {
             int selectedType = type;
             ContentValues contentValues = new ContentValues();
-            String extension = FileLoader.getFileExtension(sourceFile);
-            String mimeType = null;
-            if (extension != null) {
+            if (TextUtils.isEmpty(filename)) {
+                filename = null;
+            }
+            String extension = FileLoader.getFileExtension(filename == null ? sourceFile : new File(filename)).toLowerCase(Locale.ROOT);
+            if (TextUtils.isEmpty(mimeType)) {
                 mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
             }
             Uri uriToInsert = null;
@@ -5859,17 +5865,29 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
 
             contentValues.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+            contentValues.put(MediaStore.MediaColumns.IS_PENDING, 1);
 
-            Uri dstUri = ApplicationLoader.applicationContext.getContentResolver().insert(uriToInsert, contentValues);
-            if (dstUri != null) {
-                FileInputStream fileInputStream = new FileInputStream(sourceFile);
-                OutputStream outputStream = ApplicationLoader.applicationContext.getContentResolver().openOutputStream(dstUri);
-                AndroidUtilities.copyFile(fileInputStream, outputStream);
-                fileInputStream.close();
+            dstUri = resolver.insert(uriToInsert, contentValues);
+            if (dstUri == null) {
+                throw new IOException("Unable to create saved file: " + filename);
             }
+            try (FileInputStream fileInputStream = new FileInputStream(sourceFile);
+                 OutputStream outputStream = resolver.openOutputStream(dstUri)) {
+                if (outputStream == null) {
+                    throw new IOException("Unable to write saved file: " + filename);
+                }
+                AndroidUtilities.copyFile(fileInputStream, outputStream);
+            }
+            contentValues.clear();
+            contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0);
+            resolver.update(dstUri, contentValues, null, null);
             return dstUri;
         } catch (Exception e) {
             FileLog.e(e);
+            AndroidUtilities.runOnUIThread(() -> BulletinFactory.global().createErrorBulletin(LocaleController.formatString(R.string.UnknownErrorCode, e.getMessage())).show());
+            if (dstUri != null) {
+                resolver.delete(dstUri, null, null);
+            }
             return null;
         }
     }
