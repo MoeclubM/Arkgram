@@ -236,8 +236,10 @@ public class FlexFileManager {
             translateController.setChatTranslateEnabled(account.get("translate_chat_button").getAsBoolean());
         }
 
-        Theme.refreshThemeColors();
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsVisibilityToggled);
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.flexAdBlockSettingsChanged);
+        AndroidUtilities.runOnUIThread(() -> {
+            Theme.refreshThemeColors();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsVisibilityToggled);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.flexAdBlockSettingsChanged);
+        });
     }
 }

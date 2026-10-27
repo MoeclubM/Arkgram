@@ -776,7 +776,7 @@ public class PhotoViewerWebView extends FrameLayout {
         if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(getContext())) {
             return true;
         } else {
-            AlertsCreator.createDrawOverlayPermissionDialog((Activity) getContext(), null);
+            AlertsCreator.createDrawOverlayPermissionDialog((Activity) getContext(), null).show();
         }
         return false;
     }

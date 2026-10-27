@@ -5674,9 +5674,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     }
                                 }
                             }
-                            if (!destFile.exists()) {
-                                destFile.createNewFile();
-                            }
                             String path = message.messageOwner.attachPath;
                             if (preferredDocument != null) {
                                 path = null;
@@ -5705,8 +5702,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 }
                             }
                             if (sourceFile.exists()) {
-                                copyFile(sourceFile, destFile, message.getMimeType());
-                                copiedFiles++;
+                                copiedFiles += copyFile(sourceFile, destFile, message.getMimeType()) ? 1 : 0;
                             }
                         }
                     }
@@ -5867,6 +5863,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     }
                 }
                 if (document == null) {
+                    waitingForFile.countDown();
                     return;
                 }
                 String fileName = FileLoader.getAttachFileName(document);
