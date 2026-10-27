@@ -237,7 +237,7 @@ public class FlexLlmHelper {
         }
     }
 
-    private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
+    static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
         if (connection == null) {
             return null;
         }

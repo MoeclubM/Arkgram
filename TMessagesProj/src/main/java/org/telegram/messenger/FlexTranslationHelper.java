@@ -1,5 +1,7 @@
 package org.telegram.messenger;
 
+import static org.telegram.messenger.FlexLlmHelper.readConnectionText;
+
 import android.net.Uri;
 import android.text.TextUtils;
 import com.google.common.base.Charsets;
@@ -7,12 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
@@ -120,30 +117,6 @@ public class FlexTranslationHelper {
             return;
         }
         alternativeTranslateInternal(provider, text, fromLng, toLng, done);
-    }
-
-    private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
-        if (connection == null) {
-            return null;
-        }
-        InputStream stream = errorStream ? connection.getErrorStream() : connection.getInputStream();
-        if (stream == null) {
-            return null;
-        }
-        Reader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(stream, Charsets.UTF_8));
-            StringBuilder builder = new StringBuilder();
-            int c;
-            while ((c = reader.read()) != -1) {
-                builder.append((char) c);
-            }
-            return builder.toString();
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
     }
 
     private static String getProviderErrorMessage(int provider, HttpURLConnection connection, String responseText) {
