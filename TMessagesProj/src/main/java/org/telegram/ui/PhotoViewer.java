@@ -8742,11 +8742,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (parentActivity == null) {
             return false;
         }
-        if (AndroidUtilities.checkInlinePermissions(parentActivity)) {
+        if (Build.VERSION.SDK_INT < 23 || PipUtils.checkAnyPipPermissions(parentActivity)) {
             return true;
+        } else {
+            AlertsCreator.createDrawOverlayPermissionDialog(parentActivity, null, true).show();
         }
-        AlertsCreator.createDrawOverlayPermissionDialog(parentActivity, null).show();
-        return PipUtils.checkAnyPipPermissions(parentActivity);
+        return false;
     }
 
     private void captureCurrentFrame() {

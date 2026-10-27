@@ -1019,7 +1019,7 @@ public class EmbedBottomSheet extends BottomSheet {
         if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(parentActivity)) {
             return true;
         } else {
-            AlertsCreator.createDrawOverlayPermissionDialog(parentActivity, null).show();
+            AlertsCreator.createDrawOverlayPermissionDialog(parentActivity, null);
         }
         return false;
     }
