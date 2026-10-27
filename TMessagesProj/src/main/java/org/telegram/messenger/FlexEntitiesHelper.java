@@ -4,6 +4,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.URLSpan;
 
+import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 
