@@ -329,10 +329,6 @@ public class FlexConfig {
         return prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>()).size();
     }
 
-    public static void clearAdBlockedMessages() {
-        prefs().edit().remove("flex_ad_blocked_message_ids").apply();
-    }
-
     public static int getAdBlockedMessageRuleCount() {
         return prefs().getStringSet("flex_ad_blocked_message_keys", new LinkedHashSet<>()).size();
     }
@@ -682,18 +678,6 @@ public class FlexConfig {
     public static int getTranslationLlmProvider() {
         int provider = getLlmProviderFromRef(getTranslationLlmModelRef());
         return provider >= 0 ? provider : LLM_PROVIDER_OPENAI;
-    }
-
-    public static String getLlmApiUrl() {
-        return getProviderApiUrl(getTranslationLlmProvider());
-    }
-
-    public static int getLlmApiType() {
-        return getProviderApiType(getTranslationLlmProvider());
-    }
-
-    public static String getLlmApiKey() {
-        return getProviderApiKey(getTranslationLlmProvider());
     }
 
     public static String getLlmModel() {
