@@ -348,7 +348,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private View findSelectedTab() {
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
-            if (child.getVisibility() != View.VISIBLE) {
+            if (!isViewVisible(child)) {
                 continue;
             }
 
@@ -420,8 +420,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
             if (navigationDock) {
                 final float width = Math.min(getWidth() - getPaddingLeft() - getPaddingRight() + dp(8), Math.max(dp(84), sWidth + dp(8)));
-                navigationLensBounds.set(x - width / 2f, (getHeight() - sHeight) / 2f,
-                        x + width / 2f, (getHeight() + sHeight) / 2f);
+                final float centerX = Math.max(getPaddingLeft() - dp(4) + width / 2f,
+                        Math.min(getWidth() - getPaddingRight() + dp(4) - width / 2f, x));
+                navigationLensBounds.set(centerX - width / 2f, (getHeight() - sHeight) / 2f,
+                        centerX + width / 2f, (getHeight() + sHeight) / 2f);
             } else {
                 canvas.drawRoundRect(
                         x - sWidth / 2f, (getHeight() - sHeight) / 2f,
