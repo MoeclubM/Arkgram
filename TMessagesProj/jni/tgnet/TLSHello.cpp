@@ -115,9 +115,9 @@ TLSHello::TLSHello() {
     for (int a = 0; a < MAX_GREASE; a++) {
         grease[a] = (uint8_t) ((grease[a] & 0xf0) + 0x0A);
     }
-    for (size_t i = 0; i + 1 < MAX_GREASE; i += 2) {
-        if (grease[i] == grease[i + 1]) {
-            grease[i + 1] ^= 0x10;
+    for (size_t i = 1; i < MAX_GREASE; i += 2) {
+        if (grease[i] == grease[i - 1]) {
+            grease[i] ^= 0x10;
         }
     }
 }

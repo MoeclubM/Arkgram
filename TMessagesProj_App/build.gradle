@@ -68,7 +68,6 @@ android {
 
     defaultConfig.applicationId = APP_PACKAGE
 
-    sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
 
 
     compileOptions {
@@ -96,6 +95,12 @@ android {
             storePassword releaseStorePassword
             keyAlias releaseKeyAlias
             keyPassword releaseKeyPassword
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 
