@@ -73,7 +73,15 @@ if __name__ == '__main__':
     tap(welcome, strings['StartMessaging'])
     enter_phone('12025550100', '02-login')
     chats = screen('03-offline-demo', strings['ReviewDemoTitle'])
-    tap(chats, strings['MainTabsContacts'])
+    chat_tab = next(node for node in chats.iter('node') if node.get('content-desc') == strings['MainTabsChats'])
+    settings_tab = next(node for node in chats.iter('node') if node.get('content-desc') == strings['Settings'])
+    chat_bounds = list(map(int, re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', chat_tab.attrib['bounds']).groups()))
+    settings_bounds = list(map(int, re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', settings_tab.attrib['bounds']).groups()))
+    subprocess.run(['adb', 'shell', 'input', 'swipe', str((chat_bounds[0] + chat_bounds[2]) // 2),
+                    str((chat_bounds[1] + chat_bounds[3]) // 2), str((settings_bounds[0] + settings_bounds[2]) // 2),
+                    str((settings_bounds[1] + settings_bounds[3]) // 2), '300'], check=True)
+    settings = screen('03-demo-settings-drag', strings['FlexLlmSettings'])
+    tap(settings, strings['MainTabsContacts'])
     contacts = screen('03-demo-contacts', strings['ReviewDemoContactOne'])
     tap(contacts, strings['ReviewDemoContactOne'])
     screen('04-sample-conversation', strings['ReviewDemoContactOne'])

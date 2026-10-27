@@ -157,7 +157,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
                 Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 35, 0, 0));
         textView.setPadding(dp(4), 0, dp(4), 0);
         setTextSizeDp(10f);
+        setContentDescription(textView.getText());
+        imageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         if (backupImageView != null) {
+            backupImageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             backupImageView.setRoundRadius(dp(13));
             backupImageView.setLayoutParams(LayoutHelper.createFrame(26, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 5, 0, 0));
         }
@@ -593,15 +597,16 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         if (scaledTextPaint == null) {
             scaledTextPaint = new TextPaint(defaultTextPaint);
         }
-        scaledTextPaint.setTextSize(dp(textSizeDp));
+        scaledTextPaint.setTextSize(TypedValue.applyDimension(navigationDock ? TypedValue.COMPLEX_UNIT_SP : TypedValue.COMPLEX_UNIT_DIP, textSizeDp, getResources().getDisplayMetrics()));
         return scaledTextPaint.measureText(textView.getText().toString());
     }
 
     @Override
     public void setTextSizeDp(float textSizeDp) {
-        final float px = dp(textSizeDp);
+        final int unit = navigationDock ? TypedValue.COMPLEX_UNIT_SP : TypedValue.COMPLEX_UNIT_DIP;
+        final float px = TypedValue.applyDimension(unit, textSizeDp, getResources().getDisplayMetrics());
         if (textView.getTextSize() != px) {
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
+            textView.setTextSize(unit, textSizeDp);
             defaultTextPaint.setTextSize(px);
         }
     }

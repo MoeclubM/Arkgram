@@ -81,6 +81,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     public void setNavigationDock() {
         navigationDock = true;
+        selectedTabPositionX.getSpring().setStiffness(1024).setDampingRatio(0.9f);
     }
 
     public void setSelectedPosition(float position, boolean animated) {
@@ -406,7 +407,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 index++;
             }
             final float height = getHeight() - getPaddingTop() - getPaddingBottom();
-            width = Math.max(dp(84), width + dp(8));
+            width = Math.min(getWidth() - getPaddingLeft() - getPaddingRight() + dp(8), Math.max(dp(84), width + dp(8)));
             centerX = Math.max(getPaddingLeft() - dp(4) + width / 2f,
                     Math.min(getWidth() - getPaddingRight() + dp(4) - width / 2f, centerX));
             navigationLensBounds.set(centerX - width / 2f, getPaddingTop(),
@@ -418,7 +419,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
 
             if (navigationDock) {
-                final float width = Math.max(dp(84), sWidth + dp(8));
+                final float width = Math.min(getWidth() - getPaddingLeft() - getPaddingRight() + dp(8), Math.max(dp(84), sWidth + dp(8)));
                 navigationLensBounds.set(x - width / 2f, (getHeight() - sHeight) / 2f,
                         x + width / 2f, (getHeight() + sHeight) / 2f);
             } else {
@@ -539,13 +540,19 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
 
         if (!end) {
-            animatedLongSelectedViewCenterX = x;
-            invalidate();
+            if (navigationDock && draggingDock) {
+                selectedTabPositionX.animateToFinalPosition(x);
+            } else {
+                animatedLongSelectedViewCenterX = x;
+                invalidate();
+            }
         }
 
         if (found != null) {
             lastLongSelectedView = found;
-            setTabSelected(found, true);
+            if (!navigationDock || !draggingDock) {
+                setTabSelected(found, true);
+            }
 
             if (end) {
                 final float vw = found.getWidth();
@@ -563,9 +570,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     }
 
     private final BoolAnimator animatorIsScaled = new BoolAnimator(0, (a, factor, c, g) -> {
-        setScaleX(lerp(1, 1.019f, factor));
-        setScaleY(lerp(1, 1.019f, factor));
-    }, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
+        if (navigationDock) {
+            invalidate();
+        } else {
+            setScaleX(lerp(1, 1.019f, factor));
+            setScaleY(lerp(1, 1.019f, factor));
+        }
+    }, CubicBezierInterpolator.EASE_OUT_QUINT, 220);
 
     private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
         @Override
@@ -754,6 +765,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 AndroidUtilities.cancelRunOnUIThread(restoreDrawSelector);
                 selectedTabPositionX.cancel();
                 selectedTabPositionOffsetX.cancel();
+                animatedLongSelectedViewCenterX = navigationLensBounds.centerX();
                 animatedLongSelectedViewOffsetX = 0;
                 setSkipDrawSelector(true);
             }
@@ -762,9 +774,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                         || ev.getActionMasked() == MotionEvent.ACTION_CANCEL;
                 checkLongMove(ev.getX(), ev.getY(), false, end);
                 if (end) {
-                    if (ev.getActionMasked() == MotionEvent.ACTION_UP && lastLongSelectedView != null) {
+                    if (ev.getActionMasked() == MotionEvent.ACTION_UP && lastLongSelectedView != null && lastLongSelectedView != selectedOnTouchDown) {
                         lastLongSelectedView.performClick();
-                    } else {
+                    } else if (selectedOnTouchDown != null) {
                         setTabSelected(selectedOnTouchDown, true);
                         selectedTabPositionX.animateToFinalPosition(getCenterX(selectedOnTouchDown));
                     }
