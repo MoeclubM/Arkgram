@@ -19,6 +19,7 @@ jobs:
   build-release:
     runs-on: ubuntu-latest
     env:
+      ORG_GRADLE_PROJECT_CI_ABI_FILTERS: armeabi-v7a,arm64-v8a,x86,x86_64
       ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
 
@@ -59,8 +60,7 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
             version_name="${GITHUB_REF_NAME#v}"
           fi
-          base_code="$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((base_code + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$(($(date -u +%s) / 60))" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${version_name}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
@@ -83,7 +83,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew \
-            :TMessagesProj_App:assembleAfatRelease \
+            :TMessagesProj_App:assembleBundleAfatRelease \
             :TMessagesProj_App:bundleBundleAfatRelease \
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
             :TMessagesProj_AppStandalone:bundleAfatStandalone \
@@ -95,15 +95,26 @@ jobs:
         shell: bash
         run: |
           python Tools/ci/check_native_pages.py \
-            TMessagesProj_App/build/outputs/apk/afat/release/*.apk \
-            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
+            TMessagesProj_App/build/outputs/apk/bundleAfat/release/*.apk \
+            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab \
+            TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk \
+            TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab
 
-      - name: Upload Play release bundle
+      - name: Name release assets
+        shell: bash
+        run: |
+          mkdir -p release
+          cp TMessagesProj_App/build/outputs/apk/bundleAfat/release/*.apk "release/ArkGram-${ORG_GRADLE_PROJECT_APP_VERSION_NAME}-store.apk"
+          cp TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab "release/ArkGram-${ORG_GRADLE_PROJECT_APP_VERSION_NAME}-store.aab"
+          cp TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk "release/ArkGram-${ORG_GRADLE_PROJECT_APP_VERSION_NAME}-web.apk"
+          cp TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab "release/ArkGram-${ORG_GRADLE_PROJECT_APP_VERSION_NAME}-web.aab"
+
+      - name: Upload release builds
         uses: actions/upload-artifact@v7.0.1
         with:
-          path: TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
+          name: ArkGram-${{ env.ORG_GRADLE_PROJECT_APP_VERSION_NAME }}
+          path: release/*
           if-no-files-found: error
-          archive: false
 
       - name: Publish GitHub release binaries
         if: github.ref_type == 'tag'
@@ -111,10 +122,16 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           target_commitish: ${{ github.sha }}
+          name: ArkGram ${{ env.ORG_GRADLE_PROJECT_APP_VERSION_NAME }}
           fail_on_unmatched_files: true
-          files: |
-            TMessagesProj_App/build/outputs/apk/afat/release/*.apk
-            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
-            TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk
-            TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab
-          generate_release_notes: true
+          files: release/*
+          body: |
+            基于 Telegram Android 13.1.1 (7237)。ArkGram 是非官方 Telegram 客户端。
+
+            - **store.apk / store.aab**：商店版本，包名 `moe.telecom.arkgram`，与 Google Play 版本对应。
+            - **web.apk / web.aab**：独立分发版本，包名 `moe.telecom.arkgram.web`，与官方 Web standalone 构建对应；这里的 Web 指官网下载渠道，仍为 Android 应用。
+            - APK 可直接安装；AAB 用于应用商店分发。两种版本均包含 ARMv7、ARM64、x86、x86_64。
+
+            保留 ArkGram 的多账号、翻译、自定义 AI、广告过滤、底栏和品牌调整；收敛与上游无关的源码及构建改动，恢复上游支付和指纹接口。
+
+            [Google Play](https://play.google.com/store/apps/details?id=moe.telecom.arkgram) · [隐私政策](https://www.telecom.moe/arkgram/privacy/)

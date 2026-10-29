@@ -26,9 +26,10 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 240
     env:
       ORG_GRADLE_PROJECT_CI_ABI_FILTERS: arm64-v8a
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
     strategy:
       fail-fast: false
       matrix:
@@ -61,9 +62,7 @@ jobs:
         if: ${{ matrix.build-mode == 'manual' }}
         uses: gradle/actions/setup-gradle@v6.1.0
         with:
-          cache-cleanup: always
-          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+          cache-disabled: true
 
       - name: Set up Android SDK
         if: ${{ matrix.build-mode == 'manual' }}
@@ -78,43 +77,27 @@ jobs:
           sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           printf 'sdk.dir=%s\n' "$sdk_root" > local.properties
 
-      - name: Create CI signing key
-        if: ${{ matrix.build-mode == 'manual' }}
-        shell: bash
-        run: |
-          ci_keystore="TMessagesProj/config/release.keystore"
-          rm -f "$ci_keystore"
-          keytool -genkeypair \
-            -v \
-            -storetype PKCS12 \
-            -keystore "$ci_keystore" \
-            -alias arkgram \
-            -storepass ci-debug-pass \
-            -keypass ci-debug-pass \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 3650 \
-            -dname "CN=ArkGram CI, OU=CI, O=ArkGram, L=CI, ST=CI, C=US"
-          echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
-
-      - name: Compute CI version
-        if: ${{ matrix.build-mode == 'manual' }}
-        shell: bash
-        run: |
-          base_version="$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${base_version}-codeql.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
-
-      - name: Build for CodeQL
-        if: ${{ matrix.build-mode == 'manual' }}
+      - name: Compile Java and Kotlin for CodeQL
+        if: matrix.language == 'java-kotlin'
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj:compileDebugJavaWithJavac --build-cache --stacktrace
-          ./gradlew :TMessagesProj_App:assembleAfatDebug --build-cache --stacktrace
+          ./gradlew :TMessagesProj_App:compileAfatDebugJavaWithJavac \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
+            --max-workers=2 --no-build-cache --no-configuration-cache --stacktrace
+
+      - name: Compile native code for CodeQL
+        if: matrix.language == 'c-cpp'
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :TMessagesProj:externalNativeBuildDebug \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=1g" \
+            --max-workers=2 --no-build-cache --no-configuration-cache --stacktrace
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4.36.0
         with:
           category: /language:${{ matrix.language }}
+          threads: 2
+          ram: 6144

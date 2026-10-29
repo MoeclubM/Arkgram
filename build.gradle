@@ -1,51 +1,6 @@
 import groovy.xml.XmlSlurper
 
 buildscript {
-    dependencies {
-        constraints {
-            classpath 'io.netty:netty-buffer:4.2.15.Final'
-            classpath 'io.netty:netty-codec:4.2.15.Final'
-            classpath 'io.netty:netty-codec-http:4.2.15.Final'
-            classpath 'io.netty:netty-codec-http2:4.2.15.Final'
-            classpath 'io.netty:netty-codec-socks:4.2.15.Final'
-            classpath 'io.netty:netty-common:4.2.15.Final'
-            classpath 'io.netty:netty-handler:4.2.15.Final'
-            classpath 'io.netty:netty-handler-proxy:4.2.15.Final'
-            classpath 'io.netty:netty-resolver:4.2.15.Final'
-            classpath 'io.netty:netty-transport:4.2.15.Final'
-            classpath 'io.netty:netty-transport-native-unix-common:4.2.15.Final'
-            classpath 'org.bouncycastle:bcpkix-jdk18on:1.84'
-            classpath 'org.bouncycastle:bcprov-jdk18on:1.84'
-            classpath 'org.bouncycastle:bcutil-jdk18on:1.84'
-            classpath 'org.bitbucket.b_c:jose4j:0.9.6'
-            classpath 'org.jdom:jdom2:2.0.6.1'
-            classpath 'org.apache.commons:commons-lang3:3.20.0'
-            classpath 'org.apache.httpcomponents:httpclient:4.5.14'
-        }
-        components {
-            all { details ->
-                details.allVariants {
-                    withDependencies { dependencies ->
-                        dependencies.each { dependency ->
-                            if (dependency.group == 'io.netty' && dependency.name.startsWith('netty-')) {
-                                dependency.version { require '4.2.15.Final' }
-                            } else if (dependency.group == 'org.bouncycastle' && dependency.name.endsWith('-jdk18on')) {
-                                dependency.version { require '1.84' }
-                            } else if (dependency.group == 'org.bitbucket.b_c' && dependency.name == 'jose4j') {
-                                dependency.version { require '0.9.6' }
-                            } else if (dependency.group == 'org.jdom' && dependency.name == 'jdom2') {
-                                dependency.version { require '2.0.6.1' }
-                            } else if (dependency.group == 'org.apache.commons' && dependency.name == 'commons-lang3') {
-                                dependency.version { require '3.20.0' }
-                            } else if (dependency.group == 'org.apache.httpcomponents' && dependency.name == 'httpclient') {
-                                dependency.version { require '4.5.14' }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     configurations.classpath {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'io.netty' && details.requested.name.startsWith('netty-')) {
@@ -73,31 +28,6 @@ plugins {
 }
 
 subprojects {
-    dependencies {
-        components {
-            all { details ->
-                details.allVariants {
-                    withDependencies { dependencies ->
-                        dependencies.each { dependency ->
-                            if (dependency.group == 'io.netty' && dependency.name.startsWith('netty-')) {
-                                dependency.version { require '4.2.15.Final' }
-                            } else if (dependency.group == 'org.bouncycastle' && dependency.name.endsWith('-jdk18on')) {
-                                dependency.version { require '1.84' }
-                            } else if (dependency.group == 'org.bitbucket.b_c' && dependency.name == 'jose4j') {
-                                dependency.version { require '0.9.6' }
-                            } else if (dependency.group == 'org.jdom' && dependency.name == 'jdom2') {
-                                dependency.version { require '2.0.6.1' }
-                            } else if (dependency.group == 'org.apache.commons' && dependency.name == 'commons-lang3') {
-                                dependency.version { require '3.20.0' }
-                            } else if (dependency.group == 'org.apache.httpcomponents' && dependency.name == 'httpclient') {
-                                dependency.version { require '4.5.14' }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     configurations.configureEach {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'io.netty' && details.requested.name.startsWith('netty-')) {

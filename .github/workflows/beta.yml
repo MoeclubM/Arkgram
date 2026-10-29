@@ -57,8 +57,7 @@ jobs:
         shell: bash
         run: |
           base_version="$(sed -n 's/^APP_VERSION_NAME=//p' gradle.properties)"
-          base_code="$(sed -n 's/^APP_VERSION_CODE=//p' gradle.properties)"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((base_code + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$(($(date -u +%s) / 60))" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${base_version}-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
