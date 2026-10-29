@@ -8,11 +8,11 @@
 
 | 版本 | Android 包名 | 用途 |
 | --- | --- | --- |
-| Store | `moe.telecom.arkgram` | 对应 Google Play 渠道，Release 提供 APK 和 AAB；Play 页面是否可安装以商店发布状态及所在地区为准 |
-| Web | `moe.telecom.arkgram.web` | 对应上游 standalone 下载渠道，可与 Store 版同时安装；Web 指官网下载版本，仍是 Android 应用 |
-| Beta | `moe.telecom.arkgram.beta` | 持续集成生成的测试版本，可与 Store 版同时安装 |
+| 商店版 | `moe.telecom.arkgram` | 通过 Google Play 分发，上传包保存在 [CI 构建产物](https://github.com/MoeclubM/Arkgram/actions/workflows/release.yml)中；商店是否可安装以发布状态及所在地区为准 |
+| 独立版 | `moe.telecom.arkgram.web` | 通过 GitHub Release 提供 APK 和 AAB，可与商店版同时安装 |
+| 测试版 | `moe.telecom.arkgram.beta` | 持续集成生成的测试版本，可与商店版同时安装 |
 
-直接安装请下载 `.apk`，`.aab` 用于应用商店分发。正式 Release 的 Store 和 Web 版本包含 ARMv7、ARM64、x86、x86_64，最低要求 Android 7.0。Beta 构建可在 [Actions](https://github.com/MoeclubM/Arkgram/actions/workflows/beta.yml) 中下载。
+Release 附件统一命名为 `ArkGram-版本号.apk` 和 `ArkGram-版本号.aab`。直接安装请选择 APK；Google Play 上传请使用 CI 构建产物中的 `-store.aab`。正式版本包含 ARMv7、ARM64、x86、x86_64，最低要求 Android 7.0。测试构建可在 [Actions](https://github.com/MoeclubM/Arkgram/actions/workflows/beta.yml) 中下载。
 
 ## 增强功能
 
@@ -43,7 +43,7 @@ cd Arkgram
 - 在 Firebase 中为实际包名配置应用，将自己的 `google-services.json` 放入相应模块。
 - 将自己的签名文件放入 `TMessagesProj/config/release.keystore`，并通过本机 `local.properties` 或 CI 私密变量提供 `RELEASE_KEY_ALIAS`、`RELEASE_KEY_PASSWORD`、`RELEASE_STORE_PASSWORD`。不要提交私密凭据。
 
-Store 构建对应 `:TMessagesProj_App:assembleBundleAfatRelease` 和 `:TMessagesProj_App:bundleBundleAfatRelease`；Web 构建对应 `:TMessagesProj_AppStandalone:assembleAfatStandalone` 和 `:TMessagesProj_AppStandalone:bundleAfatStandalone`。正式分发包通过 [Release 工作流](https://github.com/MoeclubM/Arkgram/actions/workflows/release.yml) 构建并签名；推送版本标签会自动发布 GitHub Release。
+商店版构建对应 `:TMessagesProj_App:assembleBundleAfatRelease` 和 `:TMessagesProj_App:bundleBundleAfatRelease`；独立版构建对应 `:TMessagesProj_AppStandalone:assembleAfatStandalone` 和 `:TMessagesProj_AppStandalone:bundleAfatStandalone`。正式分发包通过 [Release 工作流](https://github.com/MoeclubM/Arkgram/actions/workflows/release.yml) 构建并签名；推送版本标签会自动将独立版发布到 GitHub Release，商店版保留在 CI 构建产物中。
 
 ## 隐私与联系
 

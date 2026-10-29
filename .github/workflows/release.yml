@@ -141,19 +141,26 @@ jobs:
           run-id: ${{ inputs.source_run_id || github.run_id }}
           github-token: ${{ github.token }}
 
+      - name: Prepare public release assets
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          mkdir -p public
+          version_name="${RELEASE_TAG#v}"
+          cp release/ArkGram-*-web.apk "public/ArkGram-${version_name}.apk"
+          cp release/ArkGram-*-web.aab "public/ArkGram-${version_name}.aab"
+
       - name: Publish GitHub release binaries
         uses: softprops/action-gh-release@v3.0.0
         with:
           tag_name: ${{ inputs.release_tag || github.ref_name }}
           name: ArkGram ${{ inputs.release_tag || github.ref_name }}
           fail_on_unmatched_files: true
-          files: release/*
+          files: public/*
           body: |
             基于 Telegram Android 13.1.1 (7237)。ArkGram 是非官方 Telegram 客户端。
 
-            - **store.apk / store.aab**：商店版本，包名 `moe.telecom.arkgram`，与 Google Play 版本对应。
-            - **web.apk / web.aab**：独立分发版本，包名 `moe.telecom.arkgram.web`，与官方 Web standalone 构建对应；这里的 Web 指官网下载渠道，仍为 Android 应用。
-            - APK 可直接安装；AAB 用于应用商店分发。两种版本均包含 ARMv7、ARM64、x86、x86_64。
+            APK 可直接安装，AAB 为独立分发包。支持 Android 7.0 及以上，包含 ARMv7、ARM64、x86、x86_64。
 
             保留 ArkGram 的多账号、翻译、自定义 AI、广告过滤、底栏和品牌调整；收敛与上游无关的源码及构建改动，恢复上游支付和指纹接口。
 
