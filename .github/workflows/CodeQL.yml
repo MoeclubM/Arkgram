@@ -26,7 +26,6 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
-    timeout-minutes: 240
     env:
       ORG_GRADLE_PROJECT_CI_ABI_FILTERS: arm64-v8a
       CMAKE_BUILD_PARALLEL_LEVEL: 2
@@ -84,7 +83,7 @@ jobs:
           chmod +x gradlew
           ./gradlew :TMessagesProj_App:compileAfatDebugJavaWithJavac \
             -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
-            --max-workers=2 --no-build-cache --no-configuration-cache --stacktrace
+            --max-workers=2 --no-daemon --no-build-cache --no-configuration-cache --stacktrace
 
       - name: Compile native code for CodeQL
         if: matrix.language == 'c-cpp'
@@ -93,11 +92,9 @@ jobs:
           chmod +x gradlew
           ./gradlew :TMessagesProj:externalNativeBuildDebug \
             -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=1g" \
-            --max-workers=2 --no-build-cache --no-configuration-cache --stacktrace
+            --max-workers=2 --no-daemon --no-build-cache --no-configuration-cache --stacktrace
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4.36.0
         with:
           category: /language:${{ matrix.language }}
-          threads: 2
-          ram: 6144
