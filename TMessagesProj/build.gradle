@@ -87,6 +87,7 @@ dependencies {
     // 34.19.0 is the last BoM for minSdk 23: BoM 35.x requires minSdk 24 (33.16.0 was the last for Android 5).
     api platform('com.google.firebase:firebase-bom:34.19.0')
     implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-appindexing:20.0.0'
     implementation "com.google.firebase:firebase-pnv"
 
     implementation "io.noties.markwon:core:4.6.2"
