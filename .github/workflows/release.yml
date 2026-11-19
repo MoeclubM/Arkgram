@@ -71,7 +71,7 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
             version_name="${GITHUB_REF_NAME#v}"
           fi
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$(($(date -u +%s) / 60))" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_STANDALONE_VERSION_CODE=$(($(date -u +%s) / 60))" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${version_name}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
@@ -79,7 +79,7 @@ jobs:
         run: |
           test -n "${ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD}"
           test -n "${ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD}"
-          test -n "${ORG_GRADLE_PROJECT_APP_VERSION_CODE}"
+          test -n "${ORG_GRADLE_PROJECT_STANDALONE_VERSION_CODE}"
           test -f TMessagesProj/config/release.keystore
 
       - name: Resolve release key alias
@@ -98,7 +98,6 @@ jobs:
             :TMessagesProj_App:bundleBundleAfatRelease \
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
             :TMessagesProj_AppStandalone:bundleAfatStandalone \
-            -PAPP_VERSION_CODE="$ORG_GRADLE_PROJECT_APP_VERSION_CODE" \
             -PAPP_VERSION_NAME="$ORG_GRADLE_PROJECT_APP_VERSION_NAME" \
             --build-cache --configuration-cache --stacktrace
 

@@ -43,7 +43,7 @@ cd Arkgram
 - 在 Firebase 中为实际包名配置应用，将自己的 `google-services.json` 放入相应模块。
 - 将自己的签名文件放入 `TMessagesProj/config/release.keystore`，并通过本机 `local.properties` 或 CI 私密变量提供 `RELEASE_KEY_ALIAS`、`RELEASE_KEY_PASSWORD`、`RELEASE_STORE_PASSWORD`。不要提交私密凭据。
 
-商店版构建对应 `:TMessagesProj_App:assembleBundleAfatRelease` 和 `:TMessagesProj_App:bundleBundleAfatRelease`；独立版构建对应 `:TMessagesProj_AppStandalone:assembleAfatStandalone` 和 `:TMessagesProj_AppStandalone:bundleAfatStandalone`。正式分发包通过 [Release 工作流](https://github.com/MoeclubM/Arkgram/actions/workflows/release.yml) 构建并签名；推送版本标签会自动将独立版发布到 GitHub Release，商店版保留在 CI 构建产物中。
+商店版构建对应 `:TMessagesProj_App:assembleBundleAfatRelease` 和 `:TMessagesProj_App:bundleBundleAfatRelease`；独立版构建对应 `:TMessagesProj_AppStandalone:assembleAfatStandalone` 和 `:TMessagesProj_AppStandalone:bundleAfatStandalone`。正式分发包通过 [Release 工作流](https://github.com/MoeclubM/Arkgram/actions/workflows/release.yml) 构建并签名；推送版本标签会自动将独立版发布到 GitHub Release，商店版保留在 CI 构建产物中。商店版跟随上游版本代码；独立版使用按时间递增的版本代码，供已有安装继续更新。
 
 ## 隐私与联系
 

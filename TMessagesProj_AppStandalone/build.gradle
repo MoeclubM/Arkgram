@@ -51,7 +51,7 @@ def getSigningValue = { String name ->
 def releaseStorePassword = getSigningValue('RELEASE_STORE_PASSWORD')
 def releaseKeyAlias = getSigningValue('RELEASE_KEY_ALIAS')
 def releaseKeyPassword = getSigningValue('RELEASE_KEY_PASSWORD')
-def appVersionCode = Integer.parseInt(String.valueOf(project.findProperty('APP_VERSION_CODE') ?: APP_VERSION_CODE))
+def appVersionCode = Integer.parseInt(String.valueOf(project.findProperty('STANDALONE_VERSION_CODE') ?: APP_VERSION_CODE))
 def appVersionName = String.valueOf(project.findProperty('APP_VERSION_NAME') ?: APP_VERSION_NAME)
 def abiVersionCodes = [
     afat: 9,
