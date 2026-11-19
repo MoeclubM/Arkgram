@@ -76,11 +76,11 @@ public class LiveStoryPipContent implements PipContent {
             return;
         }
         if (leaveHintActivity != null) {
-            leaveHintActivity.removeOnUserLeaveHintListener(onUserLeaveHint);
+            leaveHintActivity.removeTelegramOnUserLeaveHintListener(onUserLeaveHint);
         }
         leaveHintActivity = target;
         if (target != null) {
-            target.addOnUserLeaveHintListener(onUserLeaveHint);
+            target.addTelegramOnUserLeaveHintListener(onUserLeaveHint);
         }
     }
 

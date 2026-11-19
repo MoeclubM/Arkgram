@@ -1832,6 +1832,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private boolean leftButtonIsBack = true;
+
     private void checkUi_menuItems() {
         if (!hasMainTabs) {
             return;

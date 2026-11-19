@@ -22,8 +22,8 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.glass.GlassTabView;
+import org.telegram.utils.glass.source.GlassSourceColor;
 
 /** Local sample data. Never activates a UserConfig or creates a Telegram session. */
 public class ReviewDemoActivity extends BaseFragment {
@@ -61,7 +61,7 @@ public class ReviewDemoActivity extends BaseFragment {
         navigation.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4),
                 dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
         navigation.setMaxWidth(dp(380));
-        BlurredBackgroundSourceColor source = new BlurredBackgroundSourceColor();
+        GlassSourceColor source = new GlassSourceColor();
         source.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         BlurredBackgroundDrawableViewFactory factory = new BlurredBackgroundDrawableViewFactory(source);
         BlurredBackgroundDrawable background = factory.create(navigation, BlurredBackgroundProviderImpl.mainTabs(getResourceProvider()));
