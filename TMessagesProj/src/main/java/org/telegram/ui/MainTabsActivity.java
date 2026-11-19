@@ -288,6 +288,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         checkUnreadCount(true);
         applyTabsVisible(false);
 
+        Bulletin.Delegate delegate = new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset(int tag) {
+                return navigationBarHeight + (FlexConfig.isMainTabsHidden() ? 0 : dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN));
+            }
+        };
+        Bulletin.addDelegate(this, delegate);
+        Bulletin.addDelegate(contentView, delegate);
+
         showAccountChangeHint();
     }
 
@@ -1047,6 +1056,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         } else if (id == NotificationCenter.mainTabsVisibilityToggled) {
             applyTabsVisible(false);
+            contentView.requestApplyInsets();
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             if (tabs != null && tabs[INDEX_PROFILE] != null) {
                 tabs[INDEX_PROFILE].updateUserAvatar(currentAccount);

@@ -13732,7 +13732,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         }
         checkUi_mainTabsVisible();
-        blur3_InvalidateBlur();
+        glassEngine.invalidate();
         fragmentView.invalidate();
     }
 
