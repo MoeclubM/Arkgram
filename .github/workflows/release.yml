@@ -158,10 +158,10 @@ jobs:
           fail_on_unmatched_files: true
           files: public/*
           body: |
-            基于 Telegram Android 13.1.1 (7237)。ArkGram 是非官方 Telegram 客户端。
+            基于 Telegram Android 13.2.2 (7303)。ArkGram 是非官方 Telegram 客户端。
 
             APK 可直接安装，AAB 为独立分发包。支持 Android 7.0 及以上，包含 ARMv7、ARM64、x86、x86_64。
 
-            保留 ArkGram 的多账号、翻译、自定义 AI、广告过滤、底栏和品牌调整；收敛与上游无关的源码及构建改动，恢复上游支付和指纹接口。
+            同步 Telegram Android 13.2.2，将默认浅色与深色主题的蓝色强调色统一为米黄色。
 
             [Google Play](https://play.google.com/store/apps/details?id=moe.telecom.arkgram) · [隐私政策](https://www.telecom.moe/arkgram/privacy/)

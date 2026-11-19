@@ -1,6 +1,6 @@
 # ArkGram
 
-基于 [Telegram Android](https://github.com/DrKLO/Telegram) 的非官方客户端，保留原版聊天功能，提供额外的账号、翻译、AI 和界面设置。当前上游版本为 Telegram **13.1.1 (7237)**。
+基于 [Telegram Android](https://github.com/DrKLO/Telegram) 的非官方客户端，保留原版聊天功能，提供额外的账号、翻译、AI 和界面设置。当前上游版本为 Telegram **13.2.2 (7303)**。
 
 [Google Play](https://play.google.com/store/apps/details?id=moe.telecom.arkgram) · [下载最新 Release](https://github.com/MoeclubM/Arkgram/releases/latest) · [隐私政策](https://www.telecom.moe/arkgram/privacy/) · [问题反馈](https://github.com/MoeclubM/Arkgram/issues)
 
