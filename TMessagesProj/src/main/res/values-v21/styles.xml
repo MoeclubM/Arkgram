@@ -23,6 +23,9 @@
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="android:colorAccent">#876230</item>
+        <item name="colorAccent">#876230</item>
+        <item name="android:textColorLink">#876230</item>
     </style>
 
     <style name="Theme.TMessages" parent="Theme.AppCompat.Light">
@@ -50,6 +53,9 @@
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="android:colorAccent">#876230</item>
+        <item name="colorAccent">#876230</item>
+        <item name="android:textColorLink">#876230</item>
     </style>
 
     <style name="Theme.TMessages.Dark" parent="Theme.AppCompat.DayNight">
@@ -76,6 +82,9 @@
         <item name="android:textViewStyle">@style/MyTextViewStyle</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:forceDarkAllowed">true</item>
+        <item name="android:colorAccent">#F4E2B8</item>
+        <item name="colorAccent">#F4E2B8</item>
+        <item name="android:textColorLink">#F4E2B8</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">

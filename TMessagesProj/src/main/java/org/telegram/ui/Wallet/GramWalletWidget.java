@@ -155,7 +155,7 @@ public final class GramWalletWidget {
         layout.addView(card, LayoutHelper.createLinear(-1, -2));
         LinearLayout actions = GramWalletTonConnect.transactionBlock(context, LocaleController.getString(R.string.WalletActions), resourcesProvider);
         for (GramWalletTonConnect.Transaction.Message message : transaction.messages) {
-            actions.addView(GramWalletTonConnect.block(context, IconBackgroundColors.BLUE, R.drawable.mini_gram_24,
+            actions.addView(GramWalletTonConnect.block(context, IconBackgroundColors.SAND, R.drawable.mini_gram_24,
                     message.payload == null || message.comment != null ? LocaleController.getString(R.string.WalletTransfer) : LocaleController.getString(R.string.WalletContractCall),
                     LocaleController.formatSpannable(R.string.WalletTransferTo, GramWalletTonConnect.shortAddress(message.address)),
                     GramWalletTonConnect.actionPrice(-message.amount), message.comment, resourcesProvider), LayoutHelper.createLinear(-1, -2));

@@ -1616,7 +1616,7 @@ public class GramWalletTonConnect {
         rows.setOrientation(LinearLayout.VERTICAL);
         final LinearLayout previewBlock = transactionBlock(context, LocaleController.getString(R.string.WalletPreview), resourcesProvider);
         final String destination = shortAddress(request.transaction.messages.get(0).address);
-        previewBlock.addView(block(context, IconBackgroundColors.BLUE, R.drawable.mini_gram_24,
+        previewBlock.addView(block(context, IconBackgroundColors.SAND, R.drawable.mini_gram_24,
                 GramWallet.formatGramsWithUnit(request.transaction.total, true),
                 request.transaction.messages.size() > 1
                         ? LocaleController.formatSpannable(R.string.WalletTransferToMultiple, destination, request.transaction.messages.size() - 1)
@@ -1625,7 +1625,7 @@ public class GramWalletTonConnect {
         rows.addView(previewBlock, LayoutHelper.createLinear(-1, -2, 12, 4, 12, 6));
         final LinearLayout actionsBlock = transactionBlock(context, LocaleController.getString(R.string.WalletActions), resourcesProvider);
         for (Transaction.Message message : request.transaction.messages) {
-            actionsBlock.addView(block(context, IconBackgroundColors.BLUE, R.drawable.mini_gram_24,
+            actionsBlock.addView(block(context, IconBackgroundColors.SAND, R.drawable.mini_gram_24,
                     message.payload == null || message.comment != null ? LocaleController.getString(R.string.WalletTransfer) : LocaleController.getString(R.string.WalletContractCall),
                     LocaleController.formatSpannable(R.string.WalletTransferTo, shortAddress(message.address)), actionPrice(-message.amount),
                     message.comment, resourcesProvider),

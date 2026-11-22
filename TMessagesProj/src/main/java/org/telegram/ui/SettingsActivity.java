@@ -818,13 +818,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
-        items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
+        items.add(SettingCell.Factory.of(1, IconBackgroundColors.SAND.top, IconBackgroundColors.SAND.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
         items.add(SettingCell.Factory.of(2, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_chat, getString(R.string.SettingsChat), getString(R.string.SettingsChatInfo)));
         items.add(SettingCell.Factory.of(3, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, getString(R.string.SettingsPrivacySecurity), getString(R.string.SettingsPrivacySecurityInfo)));
         items.add(SettingCell.Factory.of(5, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.settings_sounds, getString(R.string.SettingsNotifications), getString(R.string.SettingsNotificationsInfo)));
-        items.add(SettingCell.Factory.of(6, IconBackgroundColors.BLUE_DEEP.top, IconBackgroundColors.BLUE_DEEP.bottom, R.drawable.settings_data, getString(R.string.SettingsData), getString(R.string.SettingsDataInfo)));
-        items.add(SettingCell.Factory.of(7, IconBackgroundColors.BLUE_ALT.top, IconBackgroundColors.BLUE_ALT.bottom, R.drawable.settings_folders, getString(R.string.SettingsFolders), getString(R.string.SettingsFoldersInfo)));
-        items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
+        items.add(SettingCell.Factory.of(6, IconBackgroundColors.SAND_DEEP.top, IconBackgroundColors.SAND_DEEP.bottom, R.drawable.settings_data, getString(R.string.SettingsData), getString(R.string.SettingsDataInfo)));
+        items.add(SettingCell.Factory.of(7, IconBackgroundColors.SAND_ALT.top, IconBackgroundColors.SAND_ALT.bottom, R.drawable.settings_folders, getString(R.string.SettingsFolders), getString(R.string.SettingsFoldersInfo)));
+        items.add(SettingCell.Factory.of(8, IconBackgroundColors.SAND_GOLD.top, IconBackgroundColors.SAND_GOLD.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo)));
         items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
         items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), LocaleController.getCurrentLanguageName()));
         items.add(SettingCell.Factory.of(29, 0xFFC69B5F, 0xFFAF8144, R.drawable.settings_features, getString(R.string.FlexSettings), getString(R.string.FlexSettingsInfo)));
@@ -848,7 +848,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (ApplicationLoader.isBetaBuild() || ApplicationLoader.isStandaloneBuild() || (StarsController.getInstance(currentAccount, true).balanceAvailable() && (StarsController.getInstance(currentAccount, true).hasTransactions() || StarsController.getInstance(currentAccount, true).getBalance().positive()))) {
             final StarsController c = StarsController.getTonInstance(currentAccount);
             final long balance = c.getBalance().amount;
-            items.add(SettingCell.Factory.of(13, 0xFF1BA4ED, 0xFF1488E1, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
+            items.add(SettingCell.Factory.of(13, IconBackgroundColors.SAND_LIGHT.top, IconBackgroundColors.SAND_LIGHT.bottom, R.drawable.filled_gram_earnings, getString(R.string.GramEarnings), null, c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : ""));
         }
 
         TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
@@ -856,7 +856,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             for (TLRPC.TL_attachMenuBot attachMenuBot : menuBots.bots) {
                 final long WALLET_BOT_ID = 1985737506L;
                 if (attachMenuBot.show_in_side_menu && attachMenuBot.bot_id == WALLET_BOT_ID) {
-                    UItem item = SettingCell.Factory.ofBot(attachMenuBot, 0xFF1BA4ED, 0xFF1488E1, R.drawable.settings_wallet);
+                    UItem item = SettingCell.Factory.ofBot(attachMenuBot, IconBackgroundColors.SAND_LIGHT.top, IconBackgroundColors.SAND_LIGHT.bottom, R.drawable.settings_wallet);
                     item.object = attachMenuBot;
                     items.add(item);
                 }
@@ -874,7 +874,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         items.add(UItem.asHeader(getString(R.string.SettingsHelp)));
         items.add(SettingCell.Factory.of(17, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_ask, getString(R.string.AskAQuestion)));
-        items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
+        items.add(SettingCell.Factory.of(18, IconBackgroundColors.SAND_LIGHT.top, IconBackgroundColors.SAND_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
         items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
         items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
         items.add(SettingCell.Factory.of(28, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.msg_delete, getString(R.string.ArkGramAccountDeletion)));
@@ -884,7 +884,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asHeader(getString(R.string.SettingsExperimental)));
             items.add(SettingCell.Factory.of(24, 0xFFF45255, 0xFFDF3955, 0, getString(R.string.RoundVideoSettings)));
             items.add(SettingCell.Factory.of(26, 0xFF55CA47, 0xFF27B434, 0, getString(R.string.AudioRecorderSettings)));
-            items.add(SettingCell.Factory.of(27, 0xFF3D8BEB, 0xFF2A6FD9, 0, getString(R.string.HeaderSettings)));
+            items.add(SettingCell.Factory.of(27, IconBackgroundColors.SAND_DEEP.top, IconBackgroundColors.SAND_DEEP.bottom, 0, getString(R.string.HeaderSettings)));
         }
 
         if (BuildVars.LOGS_ENABLED || BuildVars.DEBUG_PRIVATE_VERSION) {

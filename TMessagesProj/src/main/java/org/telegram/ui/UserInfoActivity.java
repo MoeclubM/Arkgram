@@ -365,9 +365,9 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         }
         birthdayRow = items.size();
         if (birthday != null) {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_BIRTHDAY, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.filled_birthday, birthdayString(birthday), getString(R.string.ContactBirthday)));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_BIRTHDAY, IconBackgroundColors.SAND.top, IconBackgroundColors.SAND.bottom, R.drawable.filled_birthday, birthdayString(birthday), getString(R.string.ContactBirthday)));
         } else {
-            items.add(SettingsActivity.SettingCell.Factory.of(INFO_BIRTHDAY, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.filled_birthday, getString(R.string.AddBirthday), null));
+            items.add(SettingsActivity.SettingCell.Factory.of(INFO_BIRTHDAY, IconBackgroundColors.SAND.top, IconBackgroundColors.SAND.bottom, R.drawable.filled_birthday, getString(R.string.AddBirthday), null));
         }
         if (!getContactsController().getLoadingPrivacyInfo(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY)) {
             ArrayList<TLRPC.PrivacyRule> rules = getContactsController().getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_BIRTHDAY);

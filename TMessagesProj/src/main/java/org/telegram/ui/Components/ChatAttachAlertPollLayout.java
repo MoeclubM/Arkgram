@@ -2037,7 +2037,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         cell.setTextAndValueAndIconAndCheck(
                             getString(R.string.PollV2ShowWhoVoted),
                             getString(R.string.PollV2ShowWhoVotedInfo),
-                            IconBackgroundColors.BLUE, R.drawable.filled_poll_view_24,
+                            IconBackgroundColors.SAND, R.drawable.filled_poll_view_24,
                             !anonymousPoll);
                     } else if (position == poll2vMultipleRow) {
                         cell.setTextAndValueAndIconAndCheck(
@@ -2055,7 +2055,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         cell.setTextAndValueAndIconAndCheck(
                             getString(R.string.PollV2AllowAddingOptions),
                             getString(R.string.PollV2AllowAddingOptionsInfo),
-                            IconBackgroundColors.CYAN, R.drawable.filled_poll_add_24,
+                            IconBackgroundColors.SAND_GOLD, R.drawable.filled_poll_add_24,
                             allowAddingOptions);
                     } else if (position == poll2vShuffleRow) {
                         cell.setTextAndValueAndIconAndCheck(
@@ -2073,13 +2073,13 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                         cell.setTextAndValueAndIconAndCheck(
                             getString(R.string.PollV2LimitByCountry),
                             getString(R.string.PollV2LimitByCountryInfo),
-                            IconBackgroundColors.BLUE_LIGHT, R.drawable.filled_location,
+                            IconBackgroundColors.SAND_LIGHT, R.drawable.filled_location,
                             poll2vLimitByCountryRow.checked);
                     } else if (position == poll2vSubscribersOnlyRow.row) {
                         cell.setTextAndValueAndIconAndCheck(
                             getString(R.string.PollV2RestrictToSubscribers),
                             getString(R.string.PollV2RestrictToSubscribersInfo),
-                            IconBackgroundColors.BLUE_DEEP, R.drawable.msg_folders_groups,
+                            IconBackgroundColors.SAND_DEEP, R.drawable.msg_folders_groups,
                             poll2vSubscribersOnlyRow.checked);
                     } else if (position == poll2vLimitDurationRow) {
                         cell.setTextAndValueAndIconAndCheck(

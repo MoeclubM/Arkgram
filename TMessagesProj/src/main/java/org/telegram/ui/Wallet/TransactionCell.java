@@ -261,7 +261,7 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
                 titleView.setText(UserObject.getUserName(user));
             } else {
                 avatarView.setVisibility(View.GONE);
-                setIconColor(incoming ? IconBackgroundColors.BLUE : IconBackgroundColors.GREEN);
+                setIconColor(incoming ? IconBackgroundColors.SAND : IconBackgroundColors.GREEN);
                 iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
                 titleView.setText(addressFormatter.format(transaction.peer.address));
             }
@@ -274,19 +274,19 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
                 titleView.setText(chat.title);
             } else {
                 avatarView.setVisibility(View.GONE);
-                setIconColor(incoming ? IconBackgroundColors.BLUE : IconBackgroundColors.GREEN);
+                setIconColor(incoming ? IconBackgroundColors.SAND : IconBackgroundColors.GREEN);
                 iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
                 titleView.setText(!TextUtils.isEmpty(transaction.peer.domain) ? transaction.peer.domain : addressFormatter.format(transaction.peer.address));
             }
         } else if (transaction.peer instanceof TL_wallet.walletTransactionPeerTelegramGift) {
             avatarView.setVisibility(View.GONE);
-            setIconColor(incoming ? IconBackgroundColors.GREEN : IconBackgroundColors.BLUE);
+            setIconColor(incoming ? IconBackgroundColors.GREEN : IconBackgroundColors.SAND);
             iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
             titleView.setText(getString(R.string.WalletTransactionTelegram));
         } else if (transaction.peer instanceof TL_wallet.walletTransactionPeerOnramp) {
             final TL_wallet.walletTransactionPeerOnramp peer = (TL_wallet.walletTransactionPeerOnramp) transaction.peer;
             avatarView.setVisibility(View.GONE);
-            setIconColor(IconBackgroundColors.BLUE);
+            setIconColor(IconBackgroundColors.SAND);
             if ("walt".equalsIgnoreCase(peer.provider_name) || "wallet".equalsIgnoreCase(peer.provider_name)) {
                 iconView.setImageResource(R.drawable.wallet_transaction_walt);
                 titleView.setText(getString(R.string.WalletTransactionTopUpCrypto));
@@ -298,7 +298,7 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
         } else {
             // Plain address peers have no avatar: outgoing transfers use the green icon like gift transfers.
             avatarView.setVisibility(View.GONE);
-            setIconColor(incoming ? IconBackgroundColors.BLUE : IconBackgroundColors.GREEN);
+            setIconColor(incoming ? IconBackgroundColors.SAND : IconBackgroundColors.GREEN);
             iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
             if (!TextUtils.isEmpty(transaction.peer.domain)) {
                 titleView.setText(transaction.peer.domain);

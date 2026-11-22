@@ -372,7 +372,7 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             final int unreadCount = pendingRequestsList.getUnreadCount();
 
             items.add(CommunityRequestsCell.Factory.of(ROW_ID_PENDING_REQUESTS,
-                IconBackgroundColors.BLUE_ALT, R.drawable.filled_requests_24,
+                IconBackgroundColors.SAND_ALT, R.drawable.filled_requests_24,
                 (totalCount == unreadCount) ?
                     getString(R.string.CommunityPendingRequests) :
                     formatPluralString("CommunityPendingRequestsRow", totalCount),
